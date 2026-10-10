@@ -2,10 +2,11 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $installer = Join-Path $root 'scripts\install-user.ps1'
 $updater = Join-Path $root 'scripts\update-user.ps1'
-$temporaryParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+$temporaryParent = (Get-TestTemporaryParent)
 $testRootName = "codex-multi-agent-install-test-" + [Guid]::NewGuid().ToString('N')
 $testRoot = Join-Path $temporaryParent $testRootName
 $codexHome = Join-Path $testRoot 'codex'

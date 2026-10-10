@@ -90,17 +90,17 @@ Use Codex on the machine where the Kit should be installed and share the [Kit re
 
 ### Manual installation (optional)
 
-From PowerShell 7 in the repository, the direct commands are:
+The shared implementation targets Windows, macOS, and Linux using PowerShell 7. Install `pwsh` separately, then run these commands from this repository in PowerShell or your usual shell. See [platform setup and verification](docs/platform-support.md) for prerequisites, filesystem limits, and recorded platform results; macOS arm64 has passed local automated checks, while Linux and a fresh Windows run remain pending for this preview.
 
 ```powershell
-.\scripts\validate.ps1
-.\scripts\install-user.ps1
+pwsh -NoProfile -File ./scripts/validate.ps1
+pwsh -NoProfile -File ./scripts/install-user.ps1
 ```
 
 To update an existing installation, use:
 
 ```powershell
-.\scripts\update-user.ps1
+pwsh -NoProfile -File ./scripts/update-user.ps1
 ```
 
 The [Codex installation guide](docs/codex-install.md) explains source selection, preview and discovery checks. The update entrypoint uses the same receipt, `-WhatIf`, conflict protection, and `-Force` backup behavior as the installer. It does not modify `~/.codex/config.toml`. Install, upgrade and downgrade share one deployment manager. Receipt-owned components absent from the target are removed, including obsolete files inside retained Skills. Unknown or modified contents block replacement unless explicitly backed up with `-Force`. See [safe deployment](docs/safe-deployment.md) to pin a tested stable snapshot before trying a new version, restore offline, or deploy a local Git commit without changing the checkout. Backups and the recovery manager intentionally remain outside agent/Skill discovery; project data is not rolled back.
@@ -108,28 +108,22 @@ The [Codex installation guide](docs/codex-install.md) explains source selection,
 To verify the distributable package without touching your actual Codex or Skills directories, run:
 
 ```powershell
-.\tests\test-validate.ps1
-.\tests\test-stage-verification.ps1
-.\tests\test-project-blueprint.ps1
-.\tests\test-install-user.ps1
-.\tests\test-deployment.ps1
-.\tests\test-documentation.ps1
-.\tests\test-feedback-runtime.ps1
-.\tests\test-ai-simulation.ps1
+pwsh -NoProfile -File ./scripts/test.ps1
+pwsh -NoProfile -File ./tests/test-ai-simulation.ps1
 ```
 
-These tests run only in unique system-temporary directories. They verify invalid metadata and missing local references, TDD stage-packet initialization and safe state transitions, the complete package and update behavior, the feedback runtime's validation, aggregation, archive, deletion-confirmation, and cleanup behavior, and local AI-simulation definition/run evidence handling; each directory is removed before its test exits.
+The runner invokes both validators and the isolated test suites in separate PowerShell processes, records environment and check outcomes, and fails when a required prerequisite or check is unavailable. The full suite needs Git and Node.js for local fixtures; it downloads no dependencies. Tests use unique system-temporary directories and remove their fixtures. Coverage includes package metadata, stage verification, installation/update/recovery, local runtime helpers, and Windows/Unix filesystem boundaries. The separate AI-simulation check verifies local definition and run-evidence handling in isolated temporary directories and removes its fixtures.
 
 To validate public documentation structure and synchronization separately from package validation, run:
 
 ```powershell
-.\scripts\validate-docs.ps1 -ProjectRoot .
-.\tests\test-bilingual-docs.ps1
+pwsh -NoProfile -File ./scripts/validate-docs.ps1 -ProjectRoot .
+pwsh -NoProfile -File ./tests/test-bilingual-docs.ps1
 ```
 
 The installer copies agents to `~/.codex/agents` and Skills (including the internal `team-core` policy bundle and feedback runtime) to `~/.agents/skills`. It does not overwrite or merge `~/.codex/config.toml`. The optional [`config/recommended-config.toml`](config/recommended-config.toml) recommends a ceiling of six concurrently open child threads per session, excluding the Lead. If you already merged an older fragment, explicitly update `max_concurrent_threads_per_session` from `3` to `6`. The active Codex session may enforce a lower limit; a config value does not prove the setting is loaded or that six threads are available.
 
-The installer validates the kit before writing. Use `-WhatIf` to preview its actions. It stops on an existing file or Skill directory unless it is an unchanged installation recorded by the kit; use `-Force` only when you want conflicting destinations backed up and replaced. The installation receipt and backups are stored under `~/.agents/codex-multi-agent/` by default.
+The installer validates the kit before writing. Use `-WhatIf` to preview its actions. It stops on an existing file or Skill directory unless it is an unchanged installation recorded by the kit; use `-Force` only when you want conflicting destinations backed up and replaced. Linked or case-colliding managed paths remain refused even with `-Force`. The installation receipt and backups are stored under `~/.agents/codex-multi-agent/` by default.
 
 Agent names use the `team-` prefix to avoid collisions with personal agents. Historical components absent from the installation receipt are left untouched; inspect their ownership before removing them manually.
 

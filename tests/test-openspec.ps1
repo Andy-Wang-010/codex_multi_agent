@@ -4,10 +4,11 @@
 [CmdletBinding()]
 param([string]$OpenSpecEntry)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $repo = Split-Path -Parent $PSScriptRoot
 $adapter = Join-Path $repo 'skills/team-core/scripts/openspec-adapter.ps1'
 $trace = Join-Path $repo 'skills/team-core/scripts/spec-traceability.ps1'
-$tempParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$tempParent = (Get-TestTemporaryParent)
 $testRoot = Join-Path $tempParent ('codex-openspec-test-' + [guid]::NewGuid().ToString('N'))
 $double = Join-Path $PSScriptRoot 'fixtures/openspec-cli.cjs'
 $priorMode = $env:KIT_OPENSPEC_TEST_MODE
@@ -225,7 +226,9 @@ try {
   # Only the unique temporary tree owned by this test may be recursively removed.
   if (Test-Path $testRoot) {
     $resolved = (Resolve-Path $testRoot).Path
-    if (-not $resolved.StartsWith($tempParent, [StringComparison]::OrdinalIgnoreCase) -or (Split-Path $resolved -Leaf) -notlike 'codex-openspec-test-*') { throw 'Unsafe cleanup target.' }
+    if ((Split-Path $resolved -Parent) -cne $tempParent -or (Split-Path $resolved -Leaf) -notlike 'codex-openspec-test-*') { throw 'Unsafe cleanup target.' }
     Remove-Item -LiteralPath $resolved -Recurse -Force
+    if (Test-Path -LiteralPath $resolved) { throw 'OpenSpec fixture cleanup failed.' }
+    Write-Host 'Isolated OpenSpec directory removed.'
   }
 }

@@ -90,17 +90,17 @@
 
 ### 手动安装（可选）
 
-在本仓库中使用 PowerShell 7 时，直接命令如下：
+共用实现面向 Windows、macOS 和 Linux，使用 PowerShell 7。请单独安装 `pwsh`，然后在本仓库中通过 PowerShell 或常用 shell 运行以下命令。前置依赖、文件系统限制和已记录的平台结果见[平台设置与验证](docs/platform-support.md)；macOS arm64 已通过本地自动化检查，本预览版的 Linux 验证和新的 Windows 回归执行仍待完成。
 
 ```powershell
-.\scripts\validate.ps1
-.\scripts\install-user.ps1
+pwsh -NoProfile -File ./scripts/validate.ps1
+pwsh -NoProfile -File ./scripts/install-user.ps1
 ```
 
 更新已有安装时，使用：
 
 ```powershell
-.\scripts\update-user.ps1
+pwsh -NoProfile -File ./scripts/update-user.ps1
 ```
 
 详尽的源码选择、预览和发现检查步骤见[Codex 安装指南](docs/codex-install.md)。更新入口使用与安装器相同的收据、`-WhatIf` 预览、冲突保护和 `-Force` 备份行为；不会修改 `~/.codex/config.toml`。安装、升级和降级由同一个部署管理器处理。目标版本不再包含、但由收据管理的组件会被移除，包括保留 Skills 中已经过时的文件。遇到未知或已修改的内容时会阻止替换，除非显式使用 `-Force` 先备份。请参阅[安全部署](docs/safe-deployment.md)，了解如何在尝试新版本前固定经过测试的稳定快照、离线恢复、降级或在不改动当前检出版本的情况下部署本地 Git 提交。备份和恢复管理器有意放在 agent/Skill 发现路径之外；项目数据不会随工具包回退。
@@ -108,28 +108,22 @@
 要在不改动实际 Codex 或 Skills 目录的情况下验证可分发的软件包，请运行：
 
 ```powershell
-.\tests\test-validate.ps1
-.\tests\test-stage-verification.ps1
-.\tests\test-project-blueprint.ps1
-.\tests\test-install-user.ps1
-.\tests\test-deployment.ps1
-.\tests\test-documentation.ps1
-.\tests\test-feedback-runtime.ps1
-.\tests\test-ai-simulation.ps1
+pwsh -NoProfile -File ./scripts/test.ps1
+pwsh -NoProfile -File ./tests/test-ai-simulation.ps1
 ```
 
-这些测试只在唯一的系统临时目录中运行。它们会检查无效元数据和缺失的本地引用、TDD 阶段包的初始化与安全状态转换、完整软件包和更新行为、反馈运行时的校验/聚合/归档/删除确认/清理，以及本地 AI 模拟定义和运行证据处理；每个测试退出前都会移除自己的临时目录。
+统一入口在独立的 PowerShell 进程中运行两个校验器及隔离测试套件，记录环境和检查结果，并在所需依赖或检查不可用时返回失败。完整套件的本地夹具需要 Git 和 Node.js；测试不会下载依赖。测试使用唯一的系统临时目录并清理自己的夹具。覆盖范围包括软件包元数据、阶段验证、安装/更新/恢复、本地运行时辅助脚本以及 Windows/Unix 文件系统边界。 单独的 AI 模拟检查会在隔离临时目录中验证本地定义和运行证据处理，并清理自己的夹具。
 
 要单独检查公开文档的结构和同步情况，请运行：
 
 ```powershell
-.\scripts\validate-docs.ps1 -ProjectRoot .
-.\tests\test-bilingual-docs.ps1
+pwsh -NoProfile -File ./scripts/validate-docs.ps1 -ProjectRoot .
+pwsh -NoProfile -File ./tests/test-bilingual-docs.ps1
 ```
 
 安装器会把 agents 复制到 `~/.codex/agents`，把 Skills（包括内部 `team-core` 策略包和反馈运行时）复制到 `~/.agents/skills`。它不会覆盖或合并 `~/.codex/config.toml`。可选的 [`config/recommended-config.toml`](config/recommended-config.toml) 建议每个会话最多同时打开六个子线程，不计 Lead。如果之前合并过旧版本，请将 `max_concurrent_threads_per_session` 从 `3` 手动改为 `6`。当前 Codex 会话实际允许的上限可能更低；配置值不能证明设置已加载，也不能证明六个线程当前可用。
 
-安装器写入前会先验证工具包。使用 `-WhatIf` 可预览操作。如果目标位置已有文件或 Skill 目录，且收据没有记录为未改动的安装内容，安装器就会停止；只有在确实希望备份并替换冲突内容时才使用 `-Force`。默认情况下，安装收据和备份保存在 `~/.agents/codex-multi-agent/`。
+安装器写入前会先验证工具包。使用 `-WhatIf` 可预览操作。如果目标位置已有文件或 Skill 目录，且收据没有记录为未改动的安装内容，安装器就会停止；只有在确实希望备份并替换冲突内容时才使用 `-Force`。即使使用 `-Force`，也会拒绝受管理路径中的链接或大小写冲突。默认情况下，安装收据和备份保存在 `~/.agents/codex-multi-agent/`。
 
 agent 名称使用 `team-` 前缀，以避免与个人 agent 重名。安装收据没有记录的历史组件会保留原样；手动删除前应先确认其归属。
 

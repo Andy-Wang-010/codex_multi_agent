@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-10-10T06:39:41.8493610Z",
+  "runtime": {
+    "os": "macOS 26.5.1",
+    "osArchitecture": "Arm64",
+    "processArchitecture": "Arm64",
+    "powerShell": "7.6.6",
+    "framework": ".NET 10.0.12"
+  },
+  "checks": [
+    {
+      "Suite": "validate",
+      "ExitCode": 0,
+      "Seconds": 0.5
+    },
+    {
+      "Suite": "validate-docs",
+      "ExitCode": 0,
+      "Seconds": 0.36
+    },
+    {
+      "Suite": "bilingual-docs",
+      "ExitCode": 0,
+      "Seconds": 9.0
+    },
+    {
+      "Suite": "project-rules",
+      "ExitCode": 0,
+      "Seconds": 3.83
+    },
+    {
+      "Suite": "portability",
+      "ExitCode": 0,
+      "Seconds": 3.01
+    }
+  ],
+  "passed": true
+}

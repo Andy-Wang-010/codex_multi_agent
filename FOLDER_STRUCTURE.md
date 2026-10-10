@@ -62,6 +62,14 @@ The toolkit source is the current editable master. `scripts/install-user.ps1` va
 - `skills/team-core/templates/openspec/` — independently authored native-schema configuration, copied only on explicit project enablement.
 - `config/` — an optional, manually merged Codex configuration fragment.
 - `scripts/` — user-level validation, installation, and safe update helpers.
+- `scripts/test.ps1` — common offline test runner for Windows, macOS and Linux, with per-check process results and prerequisite reporting.
+- `skills/team-core/scripts/platform-filesystem.ps1` — installed runtime filesystem primitives; the standalone deployment manager keeps its own recovery-safe implementation.
+- `tests/test-portability.ps1` — isolated platform path, link, case-identity and runtime regressions.
+- `tests/helpers/platform.ps1` — test-only temporary-root, executable and link-fixture helpers.
+- `.github/workflows/platform-tests.yml` — manually dispatched checks on preprovisioned self-hosted platform runners; no checkout or dependency download step.
+- `.github/workflows/platform-tests-hosted.yml` — GitHub-hosted checks with pinned actions, manual dispatch and a push trigger restricted to `zhiheng`; publication and execution require approved connectivity.
+- `docs/platform-support.md` — platform setup, filesystem contract, supported matrix and verification procedure.
+- `docs/verification/active/platform-support.md` — actual results and remaining acceptance work for platform support.
 - `scripts/deploy-user.ps1` — self-contained versioned deployment/recovery manager; installed copies live outside Skill discovery paths.
 - `docs/safe-deployment.md` — durable installation, stable snapshot, downgrade, recovery and retention guide.
 - `docs/codex-install.md` — local Codex user installation and update steps, source checks, preview, and runtime-discovery limits.

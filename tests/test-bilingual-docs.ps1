@@ -3,11 +3,12 @@
 [CmdletBinding()]
 param()
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $validator = Join-Path $root 'scripts/validate-docs.ps1'
-$temporaryParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$temporaryParent = (Get-TestTemporaryParent)
 $testRoot = Join-Path $temporaryParent ('codex-multi-agent-bilingual-test-' + [guid]::NewGuid().ToString('N'))
-$shell = (Get-Process -Id $PID).Path
+$shell = (Get-TestPowerShell)
 
 function Assert-Condition {
   # Fail the suite when an observable validation or cleanup expectation is false.

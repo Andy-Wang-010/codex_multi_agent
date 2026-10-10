@@ -126,6 +126,10 @@ The deployment manager is independent of the Kit's agent/Skill payload. `scripts
 
 This approved installer refactor preserves global config and unrelated personal components; it changes the old per-unit restore into whole-operation recovery. No business source layout is reorganized. Snapshot/data compatibility and recovery limits are documented in [safe deployment](safe-deployment.md).
 
+## Platform boundary
+
+The installed runtime scripts share `team-core/scripts/platform-filesystem.ps1` for platform-aware root normalization, contained literal paths, link rejection, exact project-file identities and compatible hashing. Only verified macOS system aliases are canonicalized; arbitrary linked roots and linked descendants remain unsupported. Distributable package filenames remain portable and reject case collisions. The deployment manager deliberately retains self-contained filesystem code so its installed recovery copy survives source removal or payload downgrade. See [platform support](platform-support.md) for the test matrix and evidence limits.
+
 ## Deliberate limits
 
 The toolkit has no background task scheduler, no issue-tracker integration, no automatic Git push or merge, no global hook, and no recursive child orchestration. These limits keep the user-level workflow inspectable and portable across projects.

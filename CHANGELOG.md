@@ -101,6 +101,13 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 - Add the local `team-core/scripts/ai-simulation.ps1` helper and reusable definition template. It validates bounded definitions, freezes declared source snapshots, records non-replaceable call evidence with a terminal integrity head under an exact protected `_work/ai-sim-<task>/` path, and reports integrity/drift without running models or deciding acceptance.
 - Add the shared AI-simulation contract, engineering guidance and verification entry; keep raw traces separate from the `team-core` feedback runtime, which continues to support `$team-dev`, `$team-plan`, `$team-debug`, and `$team-review` only.
 
+## [0.10.1] - 2026-10-10
+
+- Extend the shared PowerShell implementation for Windows, macOS, and Linux with verified macOS temporary-directory aliases, contained project paths, exact case-sensitive project inventories, and rejection of case-colliding distributable files. Preserve the standalone recovery manager and existing receipt protocol.
+- Add a portable test runner and regression coverage for native PowerShell invocation, Windows junctions and Unix symbolic links, case-sensitive paths, Unicode paths, and separate-process deployment locking. Keep tests isolated in temporary projects and installation homes without dependency downloads.
+- Permit directory deployment without Git while retaining Git as a prerequisite for local commit deployment. Keep optional OpenSpec dependencies separately installed and explicitly selected where automatic discovery is unavailable.
+- Add cross-platform setup, a preprovisioned self-hosted CI matrix, a GitHub-hosted workflow with pinned actions, and a platform verification record. Record native macOS arm64 automated verification on default and case-sensitive APFS. Windows historical evidence remains historical; fresh Windows, Linux, and live-client acceptance remain pending. This remains a review preview.
+
 ## [0.10.1] - 2026-10-04
 
 - Add bounded external-source research to persistent bug-fix and debug workflows: research follows the ordinary two-failure retrospective, while explicitly authorized debug research consumes an existing diagnostic round. Applicable evidence may qualify one conditional extension from three to at most five ordinary repair attempts; user budgets, scope/safety gates, and pause conditions remain controlling.
