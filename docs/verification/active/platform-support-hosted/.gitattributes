@@ -1,0 +1,2 @@
+# Keep downloaded evidence byte-identical, including Windows CRLF line endings.
+*.json -text whitespace=cr-at-eol
