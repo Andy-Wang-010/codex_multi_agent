@@ -90,7 +90,7 @@ Use Codex on the machine where the Kit should be installed and share the [Kit re
 
 ### Manual installation (optional)
 
-The shared implementation targets Windows, macOS, and Linux using PowerShell 7. Install `pwsh` separately, then run these commands from this repository in PowerShell or your usual shell. See [platform setup and verification](docs/platform-support.md) for prerequisites, filesystem limits, and recorded platform results; macOS arm64 has passed local automated checks, while Linux and a fresh Windows run remain pending for this preview.
+The shared implementation targets Windows, macOS, and Linux using PowerShell 7. Install `pwsh` separately, then run these commands from this repository in PowerShell or your usual shell. See [platform setup and verification](docs/platform-support.md) for prerequisites, filesystem limits, and recorded platform results. All 14 automated checks passed on Windows x64, Ubuntu x64, and macOS arm64; additional local macOS checks covered case-sensitive APFS. Live-client acceptance remains pending for this preview.
 
 ```powershell
 pwsh -NoProfile -File ./scripts/validate.ps1

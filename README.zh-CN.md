@@ -90,7 +90,7 @@
 
 ### 手动安装（可选）
 
-共用实现面向 Windows、macOS 和 Linux，使用 PowerShell 7。请单独安装 `pwsh`，然后在本仓库中通过 PowerShell 或常用 shell 运行以下命令。前置依赖、文件系统限制和已记录的平台结果见[平台设置与验证](docs/platform-support.md)；macOS arm64 已通过本地自动化检查，本预览版的 Linux 验证和新的 Windows 回归执行仍待完成。
+共用实现面向 Windows、macOS 和 Linux，使用 PowerShell 7。请单独安装 `pwsh`，然后在本仓库中通过 PowerShell 或常用 shell 运行以下命令。前置依赖、文件系统限制和已记录的平台结果见[平台设置与验证](docs/platform-support.md)。全部 14 项自动化检查已在 Windows x64、Ubuntu x64 和 macOS arm64 上通过；额外的本地 macOS 检查覆盖了区分大小写的 APFS。本预览版的真实客户端验收仍待完成。
 
 ```powershell
 pwsh -NoProfile -File ./scripts/validate.ps1

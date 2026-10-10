@@ -106,7 +106,7 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 - Extend the shared PowerShell implementation for Windows, macOS, and Linux with verified macOS temporary-directory aliases, contained project paths, exact case-sensitive project inventories, and rejection of case-colliding distributable files. Preserve the standalone recovery manager and existing receipt protocol.
 - Add a portable test runner and regression coverage for native PowerShell invocation, Windows junctions and Unix symbolic links, case-sensitive paths, Unicode paths, and separate-process deployment locking. Keep tests isolated in temporary projects and installation homes without dependency downloads.
 - Permit directory deployment without Git while retaining Git as a prerequisite for local commit deployment. Keep optional OpenSpec dependencies separately installed and explicitly selected where automatic discovery is unavailable.
-- Add cross-platform setup, a preprovisioned self-hosted CI matrix, a GitHub-hosted workflow with pinned actions, and a platform verification record. Record native macOS arm64 automated verification on default and case-sensitive APFS. Windows historical evidence remains historical; fresh Windows, Linux, and live-client acceptance remain pending. This remains a review preview.
+- Add cross-platform setup, a preprovisioned self-hosted CI matrix, a GitHub-hosted workflow with pinned actions, and a platform verification record. Record all 14 automated checks passing on Windows x64, Ubuntu x64, and macOS arm64, with additional local macOS coverage on default and case-sensitive APFS. Preserve historical Windows evidence and explicit platform-specific skips; live-client acceptance remains pending. This remains a review preview.
 
 ## [0.10.1] - 2026-10-04
 

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-10-10T09:12:08.6476478Z",
+  "runtime": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "osArchitecture": "X64",
+    "processArchitecture": "X64",
+    "powerShell": "7.6.6",
+    "framework": ".NET 10.0.12"
+  },
+  "checks": [
+    {
+      "Suite": "validate",
+      "ExitCode": 0,
+      "Seconds": 0.97
+    },
+    {
+      "Suite": "validate-docs",
+      "ExitCode": 0,
+      "Seconds": 0.82
+    },
+    {
+      "Suite": "agent-concurrency",
+      "ExitCode": 0,
+      "Seconds": 0.95
+    },
+    {
+      "Suite": "bilingual-docs",
+      "ExitCode": 0,
+      "Seconds": 17.46
+    },
+    {
+      "Suite": "deployment",
+      "ExitCode": 0,
+      "Seconds": 17.81
+    },
+    {
+      "Suite": "documentation",
+      "ExitCode": 0,
+      "Seconds": 17.7
+    },
+    {
+      "Suite": "feedback-runtime",
+      "ExitCode": 0,
+      "Seconds": 1.01
+    },
+    {
+      "Suite": "install-user",
+      "ExitCode": 0,
+      "Seconds": 14.47
+    },
+    {
+      "Suite": "openspec",
+      "ExitCode": 0,
+      "Seconds": 6.3
+    },
+    {
+      "Suite": "project-blueprint",
+      "ExitCode": 0,
+      "Seconds": 0.61
+    },
+    {
+      "Suite": "project-rules",
+      "ExitCode": 0,
+      "Seconds": 1.32
+    },
+    {
+      "Suite": "stage-verification",
+      "ExitCode": 0,
+      "Seconds": 1.03
+    },
+    {
+      "Suite": "validate-package",
+      "ExitCode": 0,
+      "Seconds": 8.43
+    },
+    {
+      "Suite": "portability",
+      "ExitCode": 0,
+      "Seconds": 1.55
+    }
+  ],
+  "passed": true
+}

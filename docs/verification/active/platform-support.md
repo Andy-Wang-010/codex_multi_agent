@@ -1,12 +1,12 @@
 # Verification: Windows, macOS, and Linux portability
 
-Status: macOS arm64 automated verification passed across a full run and affected-check rerun, with additional case-sensitive APFS coverage. Native Linux execution, a fresh Windows regression run, and live-client acceptance remain pending.
+Status: all 14 automated checks passed on native Windows x64, Ubuntu x64, and macOS arm64 hosted runners. Local macOS verification adds system-alias and case-sensitive APFS coverage. Live-client acceptance remains pending.
 
 ## Scope and baseline
 
 Version 0.10.1 extends the existing implementation with platform-aware filesystem handling, a portable test runner, Windows/Unix link fixtures, and cross-platform setup documentation. Receipt schema 2 and manager protocol 1 remain the compatibility baseline. The deployment manager stays self-contained for recovery after source removal or payload downgrade.
 
-The development checkout began at `ca62fce` on branch `zhiheng`; verification covers the uncommitted implementation in that branch. Existing Windows 0.10.0 results remain historical. No PowerShell or Linux runtime was initially available on the local macOS arm64 host. Tests were authored before executable verification became available; this record does not claim an earlier executed test-first Red.
+The development checkout began at `ca62fce` on branch `zhiheng`. Initial local verification covered the uncommitted implementation; hosted verification covers commit `1ef8f5d195e568568d0a8686e00cf7a4572e17df`. Existing Windows 0.10.0 results remain historical. No PowerShell or Linux runtime was initially available on the local macOS arm64 host. Tests were authored before executable verification became available; this record does not claim an earlier executed test-first Red.
 
 ## Ownership and review
 
@@ -21,7 +21,7 @@ Execution found two further issues. PowerShell returned an empty parent for `Spl
 
 ## Acceptance cases
 
-Mac results below do not establish native Windows or Linux behavior.
+The initial local macOS results below do not establish native Windows or Linux behavior. The hosted-run section records the later native evidence separately.
 
 | Case | Expected result | Evidence | Status |
 | --- | --- | --- | --- |
@@ -61,21 +61,41 @@ A separate offline public-command diagnostic confirmed POSIX OpenSpec discovery 
 
 PowerShell parsed all 28 source/test scripts without syntax errors. For the final scripts, SHA256 of the sorted, newline-terminated `relative-path:sha256(file-bytes)` manifest is `01d18e340cf9455d49f4be37d8b856a4163090d11ecf1a5b1b86aa0cb46a7aa3`; inputs are all `.ps1` files under `scripts`, `skills/team-core/scripts`, and `tests`.
 
-Additional checks: `git diff --check`; complete semantic review of both README/changelog language pairs; supplemental paired technical-content/link/history checks; and local YAML parsing of the three-target CI workflow. The workflow has not been dispatched and runner provisioning is not verified. Native Linux, fresh Windows, the declared PowerShell 7.0 minimum, additional architectures, real OpenSpec lifecycle, and live-client acceptance remain unverified. Before CI preparation, no real-home kit installation, commit, or push had been performed.
+Additional local checks: `git diff --check`; complete semantic review of both README/changelog language pairs; supplemental paired technical-content/link/history checks; and local YAML parsing of the three-target CI workflow. At this stage, hosted execution was still pending. The declared PowerShell 7.0 minimum, additional architectures, real OpenSpec lifecycle, and live-client acceptance remain unverified. Before CI preparation, no real-home kit installation, commit, or push had been performed.
 
 ## Follow-up: native runners and client discovery
 
-On 2026-10-10 the user requested the remaining verification and confirmed that no Windows/Linux machines or CI runners were available. The local Mac has no installed container or VM runtime for those targets. A separate GitHub-hosted workflow was prepared, retaining the original self-hosted option. It supports manual dispatch and a push trigger restricted to `zhiheng` for initial branch verification. The user subsequently authorized committing/pushing this branch, running CI, and direct GitHub connectivity for this run. This exception does not authorize unrelated provider traffic. Native execution remains pending.
+On 2026-10-10 the user requested the remaining verification and confirmed that no Windows/Linux machines or CI runners were available. The local Mac has no installed container or VM runtime for those targets. A separate GitHub-hosted workflow was prepared, retaining the original self-hosted option. It supports manual dispatch and a push trigger restricted to `zhiheng` for initial branch verification. The user subsequently authorized committing/pushing this branch, running CI, and direct GitHub connectivity for this run, then approved a writable fork when the original repository was read-only. This exception does not authorize unrelated provider traffic.
 
 Before publication, the three standard runner labels were checked against [GitHub's supported runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); the corresponding official image inventories list PowerShell, Git, and Node.js. The workflow pins [checkout v4.3.1](https://github.com/actions/checkout/releases/tag/v4.3.1) to `34e114876b0b11c390a56381ad16ebd13914f8d5` and [upload-artifact v4.6.2](https://github.com/actions/upload-artifact/releases/tag/v4.6.2) to `ea165f8d65b6e75b540449e92b4886f43607fa02`. The runtime versions actually supplied to each job still require recorded execution evidence.
 
 A fresh local client-discovery attempt used Codex CLI `0.162.0-alpha.17.2`. The kit preview and installation succeeded into a disposable project's `.codex` and `.agents` directories. A separate stdio app-server process was launched under a macOS sandbox denying all networking and filesystem writes outside the disposable directory. `HOME` and `CODEX_HOME` were left unchanged. The process exited with code 1 before answering `initialize`; stderr included a permission denial. Thus no Skill or agent discovery result was obtained, and no model workflow was attempted. Raw client configuration and stderr were not persisted. This bounded attempt does not count as live-client acceptance; a usable fresh-client environment remains necessary.
 
-The disposable client installation and startup state were cleaned up. Local package/document validators and workflow YAML/embedded-PowerShell parsing passed after CI preparation. These checks validate the candidate locally and do not establish that GitHub can run it or that the native target suites pass.
+The disposable client installation and startup state were cleaned up. Local package/document validators and workflow YAML/embedded-PowerShell parsing passed after CI preparation. These local checks were followed by the native hosted execution below.
+
+## Native hosted execution
+
+[Run 38040447909](https://github.com/Andy-Wang-010/codex_multi_agent/actions/runs/38040447909) passed on 2026-10-10 after pushing `zhiheng` to the authorized fork. Every job recorded expected and observed source SHA `1ef8f5d195e568568d0a8686e00cf7a4572e17df`, a clean checkout, successful preflight, and the same 14 unique checks with exit code 0. The six JSON files below are unchanged downloads of the workflow artifacts. The original repository remains configured as `origin`; the writable fork is `fork`.
+
+| Target | Runtime | Temporary filesystem | Job duration | Preserved evidence |
+| --- | --- | --- | --- | --- |
+| Windows Server 2022 x64, OS build 10.0.20348 | PowerShell 7.6.6; .NET 10.0.12 | Case-insensitive | 1m35s | [Results](platform-support-hosted/windows-results.json), [provenance](platform-support-hosted/windows-provenance.json) |
+| Ubuntu 24.04.5 LTS x64 | PowerShell 7.6.6; .NET 10.0.12 | Case-sensitive | 1m43s | [Results](platform-support-hosted/linux-results.json), [provenance](platform-support-hosted/linux-provenance.json) |
+| macOS 15.7.9 arm64 | PowerShell 7.6.5; .NET 10.0.11 | Case-insensitive | 2m02s | [Results](platform-support-hosted/macos-results.json), [provenance](platform-support-hosted/macos-provenance.json) |
+
+Job logs confirmed suite cleanup and these applicability limits:
+
+- Windows skipped case-distinct package/receipt and sibling/document fixtures on its case-insensitive volume. Unix permission-mode and macOS system-alias cases were inapplicable. Junction/recovery coverage passed; a Windows ACL-denial test is still absent.
+- Linux exercised case-distinct paths, symbolic links, and Unix permission denial. Only macOS system-alias cases were inapplicable.
+- Hosted macOS skipped case-distinct paths and system-alias fixtures because its temporary root did not use `/var` or `/tmp`. Unix permission denial was exercised. The earlier local APFS runs retain the separate case-sensitive and alias evidence for the same script fingerprint.
+
+GitHub emitted a nonblocking warning that the pinned v4 actions target Node.js 20 and were executed using Node.js 24. Checkout, tests, artifact retention, and cleanup all succeeded. This warning concerns the action runtime; actual Node.js versions used by the test fixtures are recorded separately in each provenance file.
+
+The follow-up changes preserve these results and update documentation only; the source/test script fingerprint above remains unchanged. Native success does not establish live-client discovery, model availability, real OpenSpec lifecycle, the PowerShell 7.0 minimum, other Linux distributions, macOS x64, Linux arm64, or Windows ACL-denial behavior. The self-hosted workflow was not dispatched.
 
 ## Human verification
 
-1. Run the common entrypoint on each remaining native target and record OS, architecture, PowerShell/.NET, filesystem, source identity and complete outcomes.
+1. Review the completed native-target records and run the common entrypoint for any additional runtime, architecture, or filesystem claim before publishing that claim.
 2. Review fake-home installation/recovery evidence and any platform-specific cases not exercised.
 3. For an explicitly authorized real installation, preview changes, install, and start a fresh client session.
 4. Confirm agent/Skill discovery and run one small workflow in a disposable project, recording actual role identity and runtime evidence.
