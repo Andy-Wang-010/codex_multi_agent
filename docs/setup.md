@@ -1,10 +1,10 @@
 # macOS and Linux setup
 
-Version 0.10.3 adds a script entrypoint for checking prerequisites, installing the kit, and verifying client Skill discovery on macOS and Linux, targeting ARM64 and x64. It uses the existing PowerShell deployment manager. This release does not provide a native application or DMG installer. Recorded platform results remain in the [platform verification record](verification/active/platform-support.md); earlier acceptance results do not by themselves verify this new setup entrypoint.
+Version 0.10.3 adds a script entrypoint for checking prerequisites, installing the kit, and verifying client Skill discovery on macOS and Linux, targeting ARM64 and x64. It uses the existing PowerShell deployment manager. This release does not provide a native application or DMG installer. Historical platform coverage and remaining limits are summarized in the [platform matrix](platform-support.md#platform-matrix-and-evidence).
 
 ## Prepare existing runtimes
 
-The setup commands require PowerShell 7 and a compatible native Codex CLI. If Codex was installed through npm, its required Node.js runtime must also be available on `PATH`, including the Homebrew or nvm directory when applicable. The shell wrapper reports the operating system and architecture and looks for `pwsh`; PowerShell then checks the selected Codex client. Python and Lima are not required for user setup. Lima and the pinned acceptance-client assets belong to the separate [developer acceptance tools](client-acceptance.md).
+The setup commands require PowerShell 7 and a compatible native Codex CLI. If Codex was installed through npm, its required Node.js runtime must also be available on `PATH`, including the Homebrew or nvm directory when applicable. The shell wrapper reports the operating system and architecture and looks for `pwsh`; PowerShell then checks the selected Codex client. Python and a virtual machine are not required for user setup.
 
 If a runtime is missing, follow its official installation instructions using the user's approved network route:
 
@@ -48,7 +48,7 @@ Use `-CodexHome` and `-AgentsHome` for explicit alternative installation roots. 
 
 ## What verification establishes
 
-Client probes use a fresh temporary `HOME` and `CODEX_HOME`, with no imported personal authentication or client configuration. They retain the caller's executable search `PATH` so an existing npm launcher can locate Node.js; other child environment values remain explicitly allowlisted. Compatibility is checked by the reported version and actual local initialization/Skill-list operations, rather than a fixed acceptance-client version. `-TimeoutSeconds` controls individual client and installer waits, including installer output collection; the default is `120`, with a permitted range of `1` to `300` seconds. It is not a single deadline for the complete setup. The check does not substitute another client or model when a capability is missing.
+Client probes use a fresh temporary `HOME` and `CODEX_HOME`, with no imported personal authentication or client configuration. They retain the caller's executable search `PATH` so an existing npm launcher can locate Node.js; other child environment values remain explicitly allowlisted. Compatibility is checked by the reported version and actual local initialization/Skill-list operations. `-TimeoutSeconds` controls individual client and installer waits, including installer output collection; the default is `120`, with a permitted range of `1` to `300` seconds. It is not a single deadline for the complete setup. The check does not substitute another client or model when a capability is missing.
 
 After installation, setup requires successful receipt verification and client discovery of the 13 expected kit Skills at their installed paths. The probe creates an owned temporary `.agents/skills` alias to the selected installed Skill root and checks each returned path against the actual installed file. Unrelated personal Skills do not replace or satisfy any of the 13 required kit entries. This checks that the tested client can parse and discover those installed resources; it does not prove that the user's existing configuration or currently open session has enabled them, and it does not establish account/model availability, loaded agent role or model identity, or a completed development workflow. Those require separate acceptance evidence.
 
@@ -65,4 +65,4 @@ Cleanup terminates and waits for tracked client processes, attempts to terminate
 - Unsupported client protocol: use a client with the required local capabilities and rerun `Doctor`; a version string alone is not proof of compatibility.
 - Failed receipt or missing Skill: inspect the selected roots and [deployment verification/recovery procedure](safe-deployment.md). `Verify` is read-only and does not silently repair the installation.
 
-The existing [direct PowerShell installer](../scripts/install-user.ps1) remains available on Windows, macOS, and Linux. This convenience layer targets macOS/Linux setup; it does not replace Windows support, install the Codex desktop app, or run the developer VM acceptance suite.
+The existing [direct PowerShell installer](../scripts/install-user.ps1) remains available on Windows, macOS, and Linux. This convenience layer targets macOS/Linux setup; it does not replace Windows support or install the Codex desktop app.

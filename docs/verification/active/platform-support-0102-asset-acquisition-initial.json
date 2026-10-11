@@ -1,8 +1,0 @@
-{
-  "route": "approved direct",
-  "assets": {},
-  "passed": false,
-  "finishedAt": "2026-10-10T13:32:04.923087+00:00",
-  "status": "download_failed",
-  "error": "Python default CA store could not verify the server certificate. No TLS verification bypass was used; the subsequent attempt used the macOS system CA bundle."
-}

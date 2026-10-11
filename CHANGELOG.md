@@ -101,6 +101,12 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 - Add the local `team-core/scripts/ai-simulation.ps1` helper and reusable definition template. It validates bounded definitions, freezes declared source snapshots, records non-replaceable call evidence with a terminal integrity head under an exact protected `_work/ai-sim-<task>/` path, and reports integrity/drift without running models or deciding acceptance.
 - Add the shared AI-simulation contract, engineering guidance and verification entry; keep raw traces separate from the `team-core` feedback runtime, which continues to support `$team-dev`, `$team-plan`, `$team-debug`, and `$team-review` only.
 
+## [0.10.4] - 2026-10-11
+
+- Remove developer-only client/Lima acceptance harnesses, their Python tests and asset locks, run-specific platform reports, and the detailed acceptance guide from the active source tree.
+- Retain workflows, agent profiles, Skills, user setup/installation/recovery, reusable PowerShell tests, and platform CI. Keep a concise historical coverage summary in the platform guide.
+- Preserve previous release entries; previously committed tooling and reports remain recoverable from Git history. This focused cleanup remains a review preview.
+
 ## [0.10.3] - 2026-10-11
 
 - Add a macOS/Linux setup entrypoint with `Doctor`, `Install`, and `Verify` actions, operating-system/architecture and existing PowerShell/Codex detection, and manual prerequisite guidance through an approved network route. Default to `Doctor` without installing the kit.

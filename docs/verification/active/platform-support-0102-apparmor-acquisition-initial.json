@@ -1,8 +1,0 @@
-{
-  "passed": false,
-  "status": "package-not-in-security-index",
-  "package": "apparmor-profiles",
-  "route": "approved direct",
-  "reason": "Verified noble-security main and universe indexes contained no matching all-architecture package. No package was downloaded or installed; lookup continued in noble-updates.",
-  "credentialsRetained": false
-}
