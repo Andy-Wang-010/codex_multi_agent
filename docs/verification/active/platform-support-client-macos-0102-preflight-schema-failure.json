@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "mode": "preflight",
+  "passed": false,
+  "status": "setup_failed",
+  "runtime": {
+    "os": "Darwin",
+    "release": "25.5.0",
+    "architecture": "arm64",
+    "python": "3.11.6"
+  },
+  "cleanup": {
+    "completed": true,
+    "temporaryStateRemoved": true
+  },
+  "providerIdentityRequired": false,
+  "client": {
+    "version": "0.162.0-alpha.17.2",
+    "sha256": "0d5ac7aae20c4eda6242428d5e218c55ba96d8763fda2a271088ff37104b9d28"
+  },
+  "error": "RuntimeError: Client protocol lacks required ThreadStartParams fields",
+  "finishedAt": "2026-10-10T13:27:15.107566+00:00"
+}

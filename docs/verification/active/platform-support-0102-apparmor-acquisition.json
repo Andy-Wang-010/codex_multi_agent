@@ -1,0 +1,15 @@
+{
+  "package": "apparmor-profiles",
+  "version": "4.0.1really4.0.1-0ubuntu0.24.04.8",
+  "architecture": "all",
+  "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/a/apparmor/apparmor-profiles_4.0.1really4.0.1-0ubuntu0.24.04.8_all.deb",
+  "sha256": "4e7d728322f899a7a06e71bedd4f4bd1f20c21f0b3361120f34cf5c0feec849e",
+  "depends": "apparmor",
+  "metadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/main/binary-arm64/Packages.xz",
+  "metadataSha256": "fc1eaf136235059b55eb7c90a62317f186d862a2ecdacb0edbf361c066ae449a",
+  "releaseMetadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/InRelease",
+  "verification": "Official HTTPS package index matches InRelease SHA256; downloaded package matches index SHA256. OpenPGP signature was not independently verified.",
+  "intendedInstallMode": "extract-bubblewrap-profile",
+  "profileSha256": "11d39094f044f0cda0febb3ad517b830301da6b2ce929664af09ee9e4dd264f9",
+  "profilePath": "usr/share/apparmor/extra-profiles/bwrap-userns-restrict"
+}

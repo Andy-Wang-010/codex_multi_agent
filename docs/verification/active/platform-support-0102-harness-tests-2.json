@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-10-10T14:43:59.782988+00:00",
+  "kind": "offline-synthetic-regressions",
+  "passed": true,
+  "checks": [
+    {
+      "test": "tests/test-client-acceptance.py",
+      "testCount": 81,
+      "exitCode": 0,
+      "passed": true
+    },
+    {
+      "test": "tests/test-linux-vm.py",
+      "testCount": 36,
+      "exitCode": 0,
+      "passed": true
+    }
+  ],
+  "sourceSha256": {
+    "scripts/test-client-acceptance.py": "a744270633706dfc1ef2f463188cc08919a8be276130b9487cb318913b6f1b28",
+    "scripts/test-linux-vm.py": "9296203fbf72c0a8f7a4b802b402559f8c21920c45dfe9ac02b92da7d11b8753",
+    "tests/test-client-acceptance.py": "cdd354b06a46f3c5bf4bdb80ba6d5992c12aad68cc86ca6982b17b7f77d8b661",
+    "tests/test-linux-vm.py": "58fbbef6e2f930d0d15b32c15562870c71c92179e98e046d1865a4216ea6963f"
+  },
+  "authenticationAttempted": false,
+  "inferenceRequested": false
+}

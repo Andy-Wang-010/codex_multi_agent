@@ -1,0 +1,37 @@
+{
+  "route": "approved direct",
+  "assets": {
+    "lima": {
+      "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+      "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e",
+      "bytes": 38328082
+    },
+    "image": {
+      "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.img",
+      "sha256": "1d6bffe64b848468ac97f821d369a4846d983de1800ccf6b5ec8853e85cefc55",
+      "bytes": 620224512
+    },
+    "client": {
+      "url": "https://github.com/openai/codex/releases/download/rust-v0.162.0-alpha.17.2/codex-aarch64-unknown-linux-musl.tar.gz",
+      "sha256": "180bf08d3751e5d92d046c3b286a1e262ecfbccdfa9a93ae6c64af9fc557054b",
+      "bytes": 103519848
+    },
+    "pwsh": {
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/powershell-7.6.6-linux-arm64.tar.gz",
+      "sha256": "924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729",
+      "bytes": 71867455
+    },
+    "node": {
+      "url": "https://nodejs.org/download/release/v24.21.0/node-v24.21.0-linux-arm64.tar.xz",
+      "sha256": "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
+      "bytes": 30843004
+    },
+    "mac-client": {
+      "url": "https://github.com/openai/codex/releases/download/rust-v0.162.0-alpha.17.2/codex-aarch64-apple-darwin.tar.gz",
+      "sha256": "cc893d1787bedbf34001bf2d16378f479393b9e635f8dbc74e8abb7870fe3998",
+      "bytes": 97979963
+    }
+  },
+  "passed": true,
+  "finishedAt": "2026-10-10T13:34:48.515644+00:00"
+}

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "finishedAt": "2026-10-10T13:33:14.5978760Z",
+  "runtime": {
+    "os": "macOS 26.5.1",
+    "osArchitecture": "Arm64",
+    "processArchitecture": "Arm64",
+    "powerShell": "7.6.6",
+    "framework": ".NET 10.0.12"
+  },
+  "checks": [
+    {
+      "Suite": "validate",
+      "ExitCode": 0,
+      "Seconds": 0.63
+    },
+    {
+      "Suite": "validate-docs",
+      "ExitCode": 0,
+      "Seconds": 0.47
+    },
+    {
+      "Suite": "agent-concurrency",
+      "ExitCode": 0,
+      "Seconds": 0.45
+    },
+    {
+      "Suite": "bilingual-docs",
+      "ExitCode": 0,
+      "Seconds": 12.79
+    },
+    {
+      "Suite": "deployment",
+      "ExitCode": 0,
+      "Seconds": 72.43
+    },
+    {
+      "Suite": "documentation",
+      "ExitCode": 0,
+      "Seconds": 140.99
+    },
+    {
+      "Suite": "feedback-runtime",
+      "ExitCode": 0,
+      "Seconds": 3.97
+    },
+    {
+      "Suite": "install-user",
+      "ExitCode": 0,
+      "Seconds": 73.17
+    },
+    {
+      "Suite": "openspec",
+      "ExitCode": 0,
+      "Seconds": 28.57
+    },
+    {
+      "Suite": "project-blueprint",
+      "ExitCode": 0,
+      "Seconds": 1.5
+    },
+    {
+      "Suite": "project-rules",
+      "ExitCode": 0,
+      "Seconds": 4.28
+    },
+    {
+      "Suite": "stage-verification",
+      "ExitCode": 0,
+      "Seconds": 3.23
+    },
+    {
+      "Suite": "validate-package",
+      "ExitCode": 0,
+      "Seconds": 16.84
+    },
+    {
+      "Suite": "portability",
+      "ExitCode": 0,
+      "Seconds": 3.45
+    }
+  ],
+  "passed": true
+}

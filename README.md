@@ -90,7 +90,17 @@ Use Codex on the machine where the Kit should be installed and share the [Kit re
 
 ### Manual installation (optional)
 
-The shared implementation targets Windows, macOS, and Linux using PowerShell 7. Install `pwsh` separately, then run these commands from this repository in PowerShell or your usual shell. See [platform setup and verification](docs/platform-support.md) for prerequisites, filesystem limits, and recorded platform results. All 14 automated checks passed on Windows x64, Ubuntu x64, and macOS arm64; additional local macOS checks covered case-sensitive APFS. Live-client acceptance remains pending for this preview.
+The shared implementation targets Windows, macOS, and Linux using PowerShell 7. Install `pwsh` separately, then run these commands from this repository in PowerShell or your usual shell. See [platform setup and verification](docs/platform-support.md) for prerequisites, filesystem limits, and recorded platform results. All 14 automated checks passed on Windows x64, Ubuntu x64, and macOS arm64; additional local macOS checks covered case-sensitive APFS. Live-client results and outstanding identity/platform checks are recorded separately.
+
+For guided macOS/Linux setup, start with the read-only readiness check, then explicitly install and verify:
+
+```sh
+sh scripts/setup.sh
+sh scripts/setup.sh -Action Install
+sh scripts/setup.sh -Action Verify
+```
+
+The setup helper uses existing PowerShell and Codex installations, guides missing prerequisites, and checks installed Skill discovery without login or inference. See the [setup guide](docs/setup.md) for approved-route dependency preparation, options, and sandbox requirements. The direct PowerShell commands remain available on all three platforms:
 
 ```powershell
 pwsh -NoProfile -File ./scripts/validate.ps1
@@ -113,6 +123,8 @@ pwsh -NoProfile -File ./tests/test-ai-simulation.ps1
 ```
 
 The runner invokes both validators and the isolated test suites in separate PowerShell processes, records environment and check outcomes, and fails when a required prerequisite or check is unavailable. The full suite needs Git and Node.js for local fixtures; it downloads no dependencies. Tests use unique system-temporary directories and remove their fixtures. Coverage includes package metadata, stage verification, installation/update/recovery, local runtime helpers, and Windows/Unix filesystem boundaries. The separate AI-simulation check verifies local definition and run-evidence handling in isolated temporary directories and removes its fixtures.
+
+The separate [client acceptance guide](docs/client-acceptance.md) covers disposable macOS and Ubuntu arm64 client tests, named-role/model evidence, and approved network setup. These opt-in tests need Python 3.9+ and a compatible pinned Codex client; the Ubuntu VM launcher additionally needs Lima on an Apple Silicon Mac and verified local runtime assets. Live authentication and inference are excluded from the default suite, and a configured model is not provider-level identity proof.
 
 To validate public documentation structure and synchronization separately from package validation, run:
 

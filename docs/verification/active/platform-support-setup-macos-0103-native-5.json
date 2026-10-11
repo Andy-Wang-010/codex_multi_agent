@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "kind": "native-setup-offline",
+  "passed": true,
+  "steps": [
+    {
+      "name": "doctor",
+      "exitCode": 0,
+      "seconds": 1.01,
+      "result": {
+        "schemaVersion": 1,
+        "action": "Doctor",
+        "success": true,
+        "status": "ready",
+        "platform": {
+          "architecture": "arm64",
+          "os": "macos"
+        },
+        "prerequisites": {
+          "codex": true,
+          "protocol": true,
+          "version": "0.162.0-alpha.17.2",
+          "powershell": true,
+          "sandbox": true
+        },
+        "installation": {
+          "verified": false,
+          "attempted": false,
+          "preview": false
+        },
+        "discovery": {
+          "expectedCount": 13,
+          "matchedCount": 0,
+          "mode": "isolated-project-root",
+          "passed": false,
+          "checked": false
+        },
+        "cleanup": {
+          "processesStopped": true,
+          "processScope": "tracked-client-processes",
+          "scratchRemoved": true
+        },
+        "errors": [],
+        "guidance": [
+          "Dependencies are ready. Use -Action Install for a missing kit, or -Action Verify to check an existing installation."
+        ]
+      }
+    },
+    {
+      "name": "preview",
+      "exitCode": 0,
+      "seconds": 2.75,
+      "result": {
+        "schemaVersion": 1,
+        "action": "Install",
+        "success": true,
+        "status": "what_if",
+        "platform": {
+          "architecture": "arm64",
+          "os": "macos"
+        },
+        "prerequisites": {
+          "version": "0.162.0-alpha.17.2",
+          "codex": true,
+          "protocol": true,
+          "sandbox": true,
+          "powershell": true
+        },
+        "installation": {
+          "plan": {
+            "codexHome": "<fixture>/user-codex",
+            "operations": {
+              "replace": 0,
+              "install": 21,
+              "remove": 0
+            },
+            "unitCount": 21,
+            "agentsHome": "<fixture>/user-agents"
+          },
+          "preview": true,
+          "verified": false,
+          "attempted": false
+        },
+        "discovery": {
+          "checked": false,
+          "matchedCount": 0,
+          "passed": false,
+          "expectedCount": 13,
+          "mode": "isolated-project-root"
+        },
+        "cleanup": {
+          "scratchRemoved": true,
+          "processesStopped": true,
+          "processScope": "tracked-client-processes"
+        },
+        "errors": [],
+        "guidance": []
+      }
+    },
+    {
+      "name": "install",
+      "exitCode": 0,
+      "seconds": 17.23,
+      "result": {
+        "schemaVersion": 1,
+        "action": "Install",
+        "success": true,
+        "status": "installed_verified",
+        "platform": {
+          "os": "macos",
+          "architecture": "arm64"
+        },
+        "prerequisites": {
+          "codex": true,
+          "protocol": true,
+          "sandbox": true,
+          "powershell": true,
+          "version": "0.162.0-alpha.17.2"
+        },
+        "installation": {
+          "verified": true,
+          "attempted": true,
+          "preview": false
+        },
+        "discovery": {
+          "matchedCount": 13,
+          "passed": true,
+          "expectedCount": 13,
+          "checked": true,
+          "mode": "isolated-project-root"
+        },
+        "cleanup": {
+          "scratchRemoved": true,
+          "processScope": "tracked-client-processes",
+          "processesStopped": true
+        },
+        "errors": [],
+        "guidance": []
+      }
+    },
+    {
+      "name": "verify",
+      "exitCode": 0,
+      "seconds": 3.66,
+      "result": {
+        "schemaVersion": 1,
+        "action": "Verify",
+        "success": true,
+        "status": "verified",
+        "platform": {
+          "os": "macos",
+          "architecture": "arm64"
+        },
+        "prerequisites": {
+          "codex": true,
+          "powershell": true,
+          "sandbox": true,
+          "version": "0.162.0-alpha.17.2",
+          "protocol": true
+        },
+        "installation": {
+          "preview": false,
+          "verified": true,
+          "attempted": false
+        },
+        "discovery": {
+          "mode": "isolated-project-root",
+          "checked": true,
+          "passed": true,
+          "expectedCount": 13,
+          "matchedCount": 13
+        },
+        "cleanup": {
+          "scratchRemoved": true,
+          "processesStopped": true,
+          "processScope": "tracked-client-processes"
+        },
+        "errors": [],
+        "guidance": []
+      }
+    },
+    {
+      "name": "reinstall",
+      "exitCode": 0,
+      "seconds": 27.71,
+      "result": {
+        "schemaVersion": 1,
+        "action": "Install",
+        "success": true,
+        "status": "installed_verified",
+        "platform": {
+          "architecture": "arm64",
+          "os": "macos"
+        },
+        "prerequisites": {
+          "codex": true,
+          "version": "0.162.0-alpha.17.2",
+          "sandbox": true,
+          "protocol": true,
+          "powershell": true
+        },
+        "installation": {
+          "preview": false,
+          "attempted": true,
+          "verified": true
+        },
+        "discovery": {
+          "checked": true,
+          "passed": true,
+          "matchedCount": 13,
+          "expectedCount": 13,
+          "mode": "isolated-project-root"
+        },
+        "cleanup": {
+          "scratchRemoved": true,
+          "processesStopped": true,
+          "processScope": "tracked-client-processes"
+        },
+        "errors": [],
+        "guidance": []
+      }
+    }
+  ],
+  "authenticationAttempted": false,
+  "inferenceRequested": false,
+  "network": "OS-denied",
+  "cleanup": true,
+  "managedFilesEqualSource": true,
+  "unrelatedFilesPreserved": true,
+  "doctorAndPreviewPreservedTargets": true,
+  "sourceSha256": {
+    "scripts/setup.sh": "da6f928d19f569b51a34d83024872fd722ab711a5b2065c8ddec82de37acfd7c",
+    "scripts/setup-user.ps1": "89850ed7e11733a93501060b4604eddcd98f1befc280ef35180c0e4067946f55"
+  },
+  "sourceSha256Before": {
+    "scripts/setup.sh": "da6f928d19f569b51a34d83024872fd722ab711a5b2065c8ddec82de37acfd7c",
+    "scripts/setup-user.ps1": "89850ed7e11733a93501060b4604eddcd98f1befc280ef35180c0e4067946f55"
+  },
+  "sourceStable": true
+}

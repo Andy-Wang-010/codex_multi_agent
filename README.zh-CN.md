@@ -90,7 +90,17 @@
 
 ### 手动安装（可选）
 
-共用实现面向 Windows、macOS 和 Linux，使用 PowerShell 7。请单独安装 `pwsh`，然后在本仓库中通过 PowerShell 或常用 shell 运行以下命令。前置依赖、文件系统限制和已记录的平台结果见[平台设置与验证](docs/platform-support.md)。全部 14 项自动化检查已在 Windows x64、Ubuntu x64 和 macOS arm64 上通过；额外的本地 macOS 检查覆盖了区分大小写的 APFS。本预览版的真实客户端验收仍待完成。
+共用实现面向 Windows、macOS 和 Linux，使用 PowerShell 7。请单独安装 `pwsh`，然后在本仓库中通过 PowerShell 或常用 shell 运行以下命令。前置依赖、文件系统限制和已记录的平台结果见[平台设置与验证](docs/platform-support.md)。全部 14 项自动化检查已在 Windows x64、Ubuntu x64 和 macOS arm64 上通过；额外的本地 macOS 检查覆盖了区分大小写的 APFS。真实客户端测试结果以及尚未完成的身份和平台检查会单独记录。
+
+在 macOS/Linux 上，可先使用引导式设置入口进行只读就绪检查，再明确执行安装和验证：
+
+```sh
+sh scripts/setup.sh
+sh scripts/setup.sh -Action Install
+sh scripts/setup.sh -Action Verify
+```
+
+设置工具使用已有的 PowerShell 和 Codex，提示缺失的前置依赖，并在不登录、不请求推理的情况下检查已安装 Skill 的发现情况。通过获准网络路径准备依赖、可用选项及沙箱要求见[设置指南](docs/setup.md)。三个平台仍都可以直接使用以下 PowerShell 命令：
 
 ```powershell
 pwsh -NoProfile -File ./scripts/validate.ps1
@@ -113,6 +123,8 @@ pwsh -NoProfile -File ./tests/test-ai-simulation.ps1
 ```
 
 统一入口在独立的 PowerShell 进程中运行两个校验器及隔离测试套件，记录环境和检查结果，并在所需依赖或检查不可用时返回失败。完整套件的本地夹具需要 Git 和 Node.js；测试不会下载依赖。测试使用唯一的系统临时目录并清理自己的夹具。覆盖范围包括软件包元数据、阶段验证、安装/更新/恢复、本地运行时辅助脚本以及 Windows/Unix 文件系统边界。 单独的 AI 模拟检查会在隔离临时目录中验证本地定义和运行证据处理，并清理自己的夹具。
+
+单独的[客户端验收指南](docs/client-acceptance.md)说明如何在一次性环境中测试 macOS 和 Ubuntu arm64 客户端、收集具名角色及模型证据，以及配置获准的网络路径。这些按需测试需要 Python 3.9+ 和固定版本的兼容 Codex 客户端；Ubuntu VM 启动器还需要 Apple Silicon Mac 上的 Lima，以及经过校验的本地运行时资源。默认套件不包含真实登录和推理请求；已配置的模型也不等于服务提供方确认的模型身份证明。
 
 要单独检查公开文档的结构和同步情况，请运行：
 

@@ -6,7 +6,7 @@
 
 ## Active deliverable
 
-The toolkit source is the current editable master. `scripts/install-user.ps1` validates current source and delegates installation to `scripts/deploy-user.ps1`, which also manages explicit downgrade and recovery.
+The toolkit source is the current editable master. `scripts/setup.sh` and `scripts/setup-user.ps1` provide optional macOS/Linux readiness, installation, and client-discovery checks. `scripts/install-user.ps1` validates current source and delegates installation to `scripts/deploy-user.ps1`, which also manages explicit downgrade and recovery.
 
 ## Directory map
 
@@ -62,6 +62,8 @@ The toolkit source is the current editable master. `scripts/install-user.ps1` va
 - `skills/team-core/templates/openspec/` — independently authored native-schema configuration, copied only on explicit project enablement.
 - `config/` — an optional, manually merged Codex configuration fragment.
 - `scripts/` — user-level validation, installation, and safe update helpers.
+- `scripts/setup.sh` and `scripts/setup-user.ps1` — macOS/Linux setup entrypoints; default readiness checks, explicit installation, and offline client Skill verification using existing runtimes.
+- `docs/setup.md` — setup commands, manual dependency guidance, sandbox prerequisites, and failure recovery.
 - `scripts/test.ps1` — common offline test runner for Windows, macOS and Linux, with per-check process results and prerequisite reporting.
 - `skills/team-core/scripts/platform-filesystem.ps1` — installed runtime filesystem primitives; the standalone deployment manager keeps its own recovery-safe implementation.
 - `tests/test-portability.ps1` — isolated platform path, link, case-identity and runtime regressions.

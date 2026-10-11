@@ -101,6 +101,18 @@ English | [简体中文](CHANGELOG.zh-CN.md)
 - Add the local `team-core/scripts/ai-simulation.ps1` helper and reusable definition template. It validates bounded definitions, freezes declared source snapshots, records non-replaceable call evidence with a terminal integrity head under an exact protected `_work/ai-sim-<task>/` path, and reports integrity/drift without running models or deciding acceptance.
 - Add the shared AI-simulation contract, engineering guidance and verification entry; keep raw traces separate from the `team-core` feedback runtime, which continues to support `$team-dev`, `$team-plan`, `$team-debug`, and `$team-review` only.
 
+## [0.10.3] - 2026-10-11
+
+- Add a macOS/Linux setup entrypoint with `Doctor`, `Install`, and `Verify` actions, operating-system/architecture and existing PowerShell/Codex detection, and manual prerequisite guidance through an approved network route. Default to `Doctor` without installing the kit.
+- Check client capabilities in a disposable offline sandbox before installation, reuse the existing deployment manager, and verify the receipt plus all 13 installed Skills through client discovery. Keep personal configuration and authentication untouched; do not download dependencies, log in, request inference, or add native app packaging.
+- Add isolated setup regressions within the existing 14-check suite and a setup guide. Keep the script entrypoints separate from the developer-only Lima acceptance environment; this focused extension remains a review preview.
+
+## [0.10.2] - 2026-10-10
+
+- Add a reusable Python client acceptance harness with disposable homes, fresh device authentication, strict client-reported role/model/reasoning evidence, a seeded review regression, preservation checks, sanitized results, and bounded cleanup. Keep provider-reported model identity separate and optional.
+- Add a disposable Ubuntu 24.04 arm64 acceptance launcher using Lima and native Apple virtualization, verified local image/runtime assets, a fingerprinted source copy, and no shared host directories. Run the 14-check offline suite and client preflight before live authentication; require an approved network route and explicit installation-identifier authorization.
+- Add synthetic protocol/lifecycle/privacy regression tests and a client acceptance guide. Live checks remain outside the default suite; this tooling release is a review preview and does not establish unexecuted platform or model results.
+
 ## [0.10.1] - 2026-10-10
 
 - Extend the shared PowerShell implementation for Windows, macOS, and Linux with verified macOS temporary-directory aliases, contained project paths, exact case-sensitive project inventories, and rejection of case-colliding distributable files. Preserve the standalone recovery manager and existing receipt protocol.

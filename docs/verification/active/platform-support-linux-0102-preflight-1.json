@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "target": "Ubuntu 24.04 ARM64",
+  "mode": "preflight",
+  "passed": false,
+  "status": "compatibility-blocked",
+  "cleanup": {
+    "vmDeleted": true,
+    "temporaryStateRemoved": true
+  },
+  "error": "Host outbound confinement could not be established."
+}

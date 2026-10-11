@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "kind": "acquisition-provenance",
+  "verificationLevel": "Published asset pins and the stated package checksum verification; runtime execution is recorded separately.",
+  "lima": {
+    "version": "2.2.1",
+    "architecture": "arm64",
+    "archive": "lima-2.2.1-Darwin-arm64.tar.gz",
+    "url": "https://github.com/lima-vm/lima/releases/download/v2.2.1/lima-2.2.1-Darwin-arm64.tar.gz",
+    "sha256": "9e9eacce88f37e185c346bad73aa6136f738d8cdf8c3bb23cd42b071824bc66e",
+    "provenanceUrl": "https://github.com/lima-vm/lima/releases/expanded_assets/v2.2.1",
+    "installation": "Extract the entire archive together, including bin and share/lima; the main archive contains the native guest agent.",
+    "packagingSourceUrl": "https://github.com/lima-vm/lima/issues/3563"
+  },
+  "image": {
+    "version": "24.04-20260926",
+    "architecture": "aarch64",
+    "format": "qcow2",
+    "file": "ubuntu-24.04-server-cloudimg-arm64.img",
+    "url": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.img",
+    "sha256": "1d6bffe64b848468ac97f821d369a4846d983de1800ccf6b5ec8853e85cefc55",
+    "provenanceUrl": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/SHA256SUMS",
+    "packageManifestUrl": "https://cloud-images.ubuntu.com/releases/noble/release-20260926/ubuntu-24.04-server-cloudimg-arm64.manifest",
+    "packageManifestSha256": "be8373ae3b3be49905c1e9984196196cc9148c6437ec96a735e90428ee8b8ac6",
+    "formatSourceUrl": "https://ubuntu.com/docs/public-images/public-images-explanation/lxd-openstack-images/"
+  },
+  "runtimes": {
+    "client": {
+      "version": "0.162.0-alpha.17.2",
+      "architecture": "aarch64",
+      "archive": "codex-aarch64-unknown-linux-musl.tar.gz",
+      "url": "https://github.com/openai/codex/releases/download/rust-v0.162.0-alpha.17.2/codex-aarch64-unknown-linux-musl.tar.gz",
+      "sha256": "180bf08d3751e5d92d046c3b286a1e262ecfbccdfa9a93ae6c64af9fc557054b",
+      "provenanceUrl": "https://github.com/openai/codex/releases/expanded_assets/rust-v0.162.0-alpha.17.2"
+    },
+    "pwsh": {
+      "version": "7.6.6",
+      "architecture": "aarch64",
+      "archive": "powershell-7.6.6-linux-arm64.tar.gz",
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/powershell-7.6.6-linux-arm64.tar.gz",
+      "sha256": "924829e54c983648f6f1419a2dc7f9433c861b2fb5bd57736ff096c24f133729",
+      "provenanceUrl": "https://github.com/PowerShell/PowerShell/releases/tag/v7.6.6"
+    },
+    "node": {
+      "version": "24.21.0",
+      "architecture": "aarch64",
+      "archive": "node-v24.21.0-linux-arm64.tar.xz",
+      "url": "https://nodejs.org/download/release/v24.21.0/node-v24.21.0-linux-arm64.tar.xz",
+      "sha256": "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
+      "provenanceUrl": "https://nodejs.org/download/release/v24.21.0/SHASUMS256.txt",
+      "releaseUrl": "https://nodejs.org/en/blog/release/v24.21.0"
+    },
+    "code_mode_host": {
+      "version": "0.162.0-alpha.17.2",
+      "archive": "codex-code-mode-host-aarch64-unknown-linux-musl.tar.gz",
+      "url": "https://github.com/openai/codex/releases/download/rust-v0.162.0-alpha.17.2/codex-code-mode-host-aarch64-unknown-linux-musl.tar.gz",
+      "sha256": "787e836a4d4d9354887c4e0bed5fc52b3d0df329f881828024e5757145c9aa41",
+      "binarySha256": "f9befc21e78be68365f7f0904df7c7cda04c5828b719b9cf61e19fdf32ad6eca",
+      "architecture": "aarch64",
+      "provenanceUrl": "https://github.com/openai/codex/releases/expanded_assets/rust-v0.162.0-alpha.17.2",
+      "binaryDigestProvenance": "SHA256 of the executable extracted from the archive verified against the official release archive digest."
+    }
+  },
+  "packagePlan": {
+    "additionalDebs": [
+      {
+        "package": "bubblewrap",
+        "file": "bubblewrap_0.9.0-1ubuntu0.3_arm64.deb",
+        "version": "0.9.0-1ubuntu0.3",
+        "architecture": "arm64",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/b/bubblewrap/bubblewrap_0.9.0-1ubuntu0.3_arm64.deb",
+        "sha256": "dce3a2e5f0302eab717a64fe9c9411fe2d40469e2a7946e0f2ce1420a61025c3",
+        "depends": "libc6 (>= 2.38), libcap2 (>= 1:2.10), libselinux1 (>= 3.1~)",
+        "recommends": "procps",
+        "metadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/main/binary-arm64/Packages.xz",
+        "metadataSha256": "33bc8b75b4e1f711416520c984a7727de2d01e6a03f180e08642058b8e8adc6b",
+        "releaseMetadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-security/InRelease",
+        "verification": "Official HTTPS package index matches InRelease SHA256; downloaded package matches index SHA256. OpenPGP signature was not independently verified.",
+        "installMode": "extract-bubblewrap",
+        "installation": "Verify package name, version and ARM64 architecture; extract into unprivileged owned staging, validate the regular helper and its non-symlink ancestors, and install only /usr/bin/bwrap as root:root mode 0755. Do not execute maintainer scripts or install sysctl files."
+      },
+      {
+        "package": "apparmor-profiles",
+        "version": "4.0.1really4.0.1-0ubuntu0.24.04.8",
+        "architecture": "all",
+        "url": "https://ports.ubuntu.com/ubuntu-ports/pool/main/a/apparmor/apparmor-profiles_4.0.1really4.0.1-0ubuntu0.24.04.8_all.deb",
+        "sha256": "4e7d728322f899a7a06e71bedd4f4bd1f20c21f0b3361120f34cf5c0feec849e",
+        "depends": "apparmor",
+        "metadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/main/binary-arm64/Packages.xz",
+        "metadataSha256": "fc1eaf136235059b55eb7c90a62317f186d862a2ecdacb0edbf361c066ae449a",
+        "releaseMetadataUrl": "https://ports.ubuntu.com/ubuntu-ports/dists/noble-updates/InRelease",
+        "verification": "Official HTTPS package index matches InRelease SHA256; downloaded package matches index SHA256. OpenPGP signature was not independently verified.",
+        "profileSha256": "11d39094f044f0cda0febb3ad517b830301da6b2ce929664af09ee9e4dd264f9",
+        "profilePath": "usr/share/apparmor/extra-profiles/bwrap-userns-restrict",
+        "file": "apparmor-profiles_4.0.1really4.0.1-0ubuntu0.24.04.8_all.deb",
+        "installMode": "extract-bubblewrap-profile",
+        "installation": "Verify package name, exact version and architecture; extract as the ordinary guest user, reject symlink profile/ancestors, and verify the pinned standard profile digest. Refuse an existing target and install only /etc/apparmor.d/bwrap-userns-restrict as root:root mode 0644, then load that exact file with apparmor_parser -r. Record the profile digest and unchanged AppArmor/userns-clone sysctl values. Do not execute package maintainer scripts, install unrelated profiles, or change global sysctl policy. Native sandbox compatibility remains subject to preflight."
+      }
+    ],
+    "basis": "The pinned image supplies Python, Git, util-linux and .NET dependencies. The Linux client sandbox additionally needs the verified bubblewrap helper and its standard AppArmor profile, extracted separately from official offline packages. Loading the scoped profile does not establish native sandbox compatibility; preflight must confirm it.",
+    "dependencySourceUrl": "https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install#ubuntu-2404",
+    "imagePackages": {
+      "python3": "3.12.3-0ubuntu2.1",
+      "git": "1:2.43.0-1ubuntu7.3",
+      "util-linux": "2.39.3-9ubuntu6.6",
+      "ca-certificates": "20260601~24.04.1",
+      "libc6:arm64": "2.39-0ubuntu8.9",
+      "libgcc-s1:arm64": "14.2.0-4ubuntu2~24.04.1",
+      "libgssapi-krb5-2:arm64": "1.20.1-6ubuntu2.10",
+      "libicu74:arm64": "74.2-1ubuntu3.1",
+      "libssl3t64:arm64": "3.0.13-0ubuntu3.15",
+      "libstdc++6:arm64": "14.2.0-4ubuntu2~24.04.1",
+      "tzdata": "2026c-0ubuntu0.24.04.1",
+      "zlib1g:arm64": "1:1.3.dfsg-3.1ubuntu2.2",
+      "libcap2:arm64": "1:2.66-5ubuntu2.4",
+      "libselinux1:arm64": "3.5-2ubuntu2.1",
+      "procps": "2:4.0.4-4ubuntu3.3"
+    },
+    "sandboxPrerequisitesUrl": "https://learn.chatgpt.com/docs/sandboxing#prerequisites"
+  },
+  "remainingPreparation": [
+    "Obtain approval for the acquisition route, then download and verify each asset before extraction.",
+    "Inspect each verified runtime archive for its executable entrypoint, including the same-release code_mode_host helper, and create the separate local VM manifest with asset paths.",
+    "Include the locked bubblewrap .deb with installMode: extract-bubblewrap and the apparmor-profiles .deb with installMode: extract-bubblewrap-profile and its pinned profileSha256. Missing guest dependencies must fail without package-manager network fallback.",
+    "Confirm native VZ boot, guest versions, filesystem behavior, offline suite, and client preflight before any live authentication."
+  ]
+}

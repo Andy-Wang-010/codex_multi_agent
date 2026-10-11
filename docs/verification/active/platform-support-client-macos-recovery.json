@@ -1,0 +1,54 @@
+{
+  "scope": "disposable installation only",
+  "sourceReadsDuringManagerCalls": "OS sandbox denied repository reads",
+  "externalNetwork": "OS sandbox denied all networking",
+  "passed": true,
+  "steps": [
+    {
+      "action": "Verify",
+      "preview": false,
+      "exitCode": 0
+    },
+    {
+      "action": "MarkStable",
+      "preview": false,
+      "exitCode": 0
+    },
+    {
+      "action": "Deploy",
+      "preview": true,
+      "exitCode": 0
+    },
+    {
+      "action": "Deploy",
+      "preview": false,
+      "exitCode": 0
+    },
+    {
+      "action": "Verify",
+      "preview": false,
+      "exitCode": 0
+    },
+    {
+      "action": "Restore",
+      "preview": true,
+      "exitCode": 0
+    },
+    {
+      "action": "Restore",
+      "preview": false,
+      "exitCode": 0
+    },
+    {
+      "action": "Verify",
+      "preview": false,
+      "exitCode": 0
+    }
+  ],
+  "changedPayloadObserved": true,
+  "alternateSourceRemoved": true,
+  "exactPayloadRestored": true,
+  "unrelatedFilePreserved": true,
+  "projectConfigPreserved": true,
+  "managedFileCount": 51
+}
