@@ -64,7 +64,7 @@ The toolkit source is the current editable master. `scripts/setup.sh` and `scrip
 - `scripts/` — user-level validation, installation, and safe update helpers.
 - `scripts/setup.sh` and `scripts/setup-user.ps1` — macOS/Linux setup entrypoints; default readiness checks, explicit installation, and offline client Skill verification using existing runtimes.
 - `docs/setup.md` — setup commands, manual dependency guidance, sandbox prerequisites, and failure recovery.
-- `scripts/test.ps1` — common offline test runner for Windows, macOS and Linux, with per-check process results and prerequisite reporting.
+- `scripts/test.ps1` — common offline test runner for Windows, macOS and Linux; two validators and 25 suites, with per-check process results and prerequisite reporting.
 - `skills/team-core/scripts/platform-filesystem.ps1` — installed runtime filesystem primitives; the standalone deployment manager keeps its own recovery-safe implementation.
 - `tests/test-portability.ps1` — isolated platform path, link, case-identity and runtime regressions.
 - `tests/helpers/platform.ps1` — test-only temporary-root, executable and link-fixture helpers.
@@ -76,7 +76,7 @@ The toolkit source is the current editable master. `scripts/setup.sh` and `scrip
 - `docs/codex-install.md` — local Codex user installation and update steps, source checks, preview, and runtime-discovery limits.
 - `tests/test-deployment.ps1` — isolated fake-home deployment and fault-injection suite; no actual installation.
 - `tests/test-documentation.ps1` — isolated existing-project adoption and readiness/ambiguity regression tests.
-- `tests/` — isolated package, installation, feedback, AI-simulation, stage-verification and project-blueprint tests.
+- `tests/` — isolated package, installation, feedback, AI-simulation, AI-design/evaluation, generated-artifact, formatter, Team routing, Git delivery, shared test support, web engineering, stage-verification and project-blueprint tests.
 - `tests/helpers/` — shared test-only process capture, bounded package copying, complete fingerprints and owned sandbox cleanup; scenarios remain in their suites.
 - `tests/fixtures/` — controlled CLI doubles for transport and partial-failure regression tests; never production runtimes.
 - `docs/verification/active/` — implementation verification records awaiting maintainer review; not automated manual acceptance.

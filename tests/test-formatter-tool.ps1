@@ -3,6 +3,7 @@
 [CmdletBinding()]
 param([switch]$SourceOnly, [ValidateSet('EditorConfig', 'GitIgnore')][string]$PolicyCase)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $root = Split-Path -Parent $PSScriptRoot
 $helper = Join-Path $root 'skills/team-core/scripts/format-code.ps1'
 # FT-01: the installed shared Skill must include the requested executable adapter.
@@ -11,7 +12,7 @@ if (-not (Test-Path -LiteralPath $helper -PathType Leaf)) {
   throw 'FT-01 missing formatter helper: skills/team-core/scripts/format-code.ps1'
 }
 if ($SourceOnly) { Write-Output 'FT-01 helper payload exists; runtime safety not checked.'; return }
-$tempParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\', '/')
+$tempParent = Get-TestTemporaryParent
 $fixture = Join-Path $tempParent ('codex-formatter-test-' + [guid]::NewGuid().ToString('N'))
 $project = Join-Path $fixture 'project with spaces'
 $outside = Join-Path $fixture 'outside.js'
@@ -46,9 +47,10 @@ function Invoke-Adapter([hashtable]$Options) {
 exit `$LASTEXITCODE
 "@
   $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
-  $output = & pwsh -NoProfile -EncodedCommand $encodedCommand 2>&1
-  $code = $LASTEXITCODE
-  $raw = ($output | ForEach-Object { $_.ToString() }) -join "`n"
+  $child = Invoke-TestPowerShell @('-EncodedCommand', $encodedCommand)
+  $code = $child.ExitCode
+  $raw = $child.Output
+  if ($child.Errors) { throw "Adapter child stderr (exit $code): $($child.Errors)" }
   try {
     $payload = $raw | ConvertFrom-Json
   } catch {
@@ -153,6 +155,14 @@ try {
   Assert-True ($plan.Payload.results[0].formatter -eq 'Prettier') 'Auto did not select configured Prettier.'
   Assert-True (-not (Test-Path -LiteralPath $log)) 'Plan executed formatter.'
   Assert-NoChange $source $before 'FT-02 Plan'
+  # Verified macOS system aliases select the identical project at the root boundary.
+  # Expected: Plan remains read-only and selects the same formatter through /tmp or /var.
+  if ($IsMacOS -and ($project.StartsWith('/private/tmp/') -or $project.StartsWith('/private/var/'))) {
+    $aliased = Invoke-Adapter @{ ProjectRoot = $project.Substring('/private'.Length) }
+    Assert-True ($aliased.Code -eq 0 -and $aliased.Payload.results[0].formatter -eq 'Prettier') 'Aliased project Plan failed.'
+    Assert-True (-not (Test-Path -LiteralPath $log)) 'Aliased Plan executed formatter.'
+    Assert-NoChange $source $before 'Aliased Plan'
+  } else { Write-Output 'N/A: formatter macOS system alias fixture unavailable on this host.' }
 
   # FT-03 trust/write gates: Check cannot execute without trust; Apply also needs write approval.
   # Expected: structured blocked outcome, no process log and unchanged original.
@@ -179,6 +189,34 @@ try {
   Assert-True (
     $clean.Code -eq 0 -and $clean.Payload.results[0].status -eq 'clean'
   ) "Second Check was not clean: $($clean.Raw)"
+  # Ordinary case-distinct source files must both be precomputed and written once.
+  # Expected: Apply formats both exact paths on a sensitive volume, without duplicate rejection.
+  if (Test-CaseSensitiveFixture $project) {
+    Write-Fixture 'src/Case.js' 'UNFORMATTED upper'
+    Write-Fixture 'src/case.js' 'UNFORMATTED lower'
+    $caseApply = Invoke-Adapter @{
+      Action = 'Apply'; TrustTooling = $true; AllowWrite = $true; Files = @('src/Case.js', 'src/case.js')
+    }
+    Assert-True ($caseApply.Code -eq 0 -and $caseApply.Payload.summary.applied -eq 2) "Case-distinct batch failed: $($caseApply.Raw)"
+    Assert-True ([IO.File]::ReadAllText((Join-Path $project 'src/Case.js')) -ceq 'FORMATTED upper') 'Upper-case source was lost.'
+    Assert-True ([IO.File]::ReadAllText((Join-Path $project 'src/case.js')) -ceq 'FORMATTED lower') 'Lower-case source was lost.'
+  } else {
+    # Case aliases must not acquire two write identities on insensitive volumes.
+    # Expected: the entire batch is blocked before any tool call or first-file write.
+    Write-Fixture 'src/case-alias.js' 'UNFORMATTED alias'
+    $aliasFile = Join-Path $project 'src/case-alias.js'
+    $aliasHash = Fingerprint $aliasFile
+    $callsHash = Fingerprint $log
+    $aliasBatch = Invoke-Adapter @{
+      Action = 'Apply'; TrustTooling = $true; AllowWrite = $true; Files = @('src/case-alias.js', 'src/CASE-ALIAS.js')
+    }
+    Assert-True ($aliasBatch.Code -eq 2 -and $aliasBatch.Payload.summary.applied -eq 0) 'Case-alias batch wrote a duplicate physical file.'
+    $expectedReason = if ($IsWindows) { 'duplicate-file' } else { 'noncanonical-file-case' }
+    Assert-True (@($aliasBatch.Payload.results | Where-Object reason -eq $expectedReason).Count -eq 1) 'Case-alias rejection did not identify duplicate spelling.'
+    Assert-NoChange $aliasFile $aliasHash 'Case-alias batch'
+    Assert-NoChange $log $callsHash 'Case-alias process prevention'
+    Write-Output 'N/A: formatter case-distinct files require a case-sensitive fixture volume; case-alias batch refusal passed.'
+  }
   $calls = Get-Content -LiteralPath $log | ForEach-Object { ,($_ | ConvertFrom-Json) }
   foreach ($call in $calls) {
     Assert-True (
@@ -227,7 +265,7 @@ try {
   [IO.File]::WriteAllText($junctionSource, 'UNFORMATTED', $utf8)
   $junctionHash = Fingerprint $junctionSource
   $junction = Join-Path $project 'src/junction'
-  New-Item -ItemType Junction -Path $junction -Target $outsideDir | Out-Null
+  New-TestDirectoryLink $junction $outsideDir
   try {
     $linked = Invoke-Adapter @{
       Action = 'Apply'; TrustTooling = $true; AllowWrite = $true; Files = @('src/junction/file.js')
@@ -239,8 +277,20 @@ try {
     Assert-NoChange $log $logHash 'FT-03 reparse process prevention'
   } finally {
     # Remove link itself without recursive traversal before cleaning owned fixture tree.
-    if (Test-Path -LiteralPath $junction) { Remove-Item -LiteralPath $junction -Force }
+    Remove-TestLink $junction
   }
+  # A dangling ancestor must fail as unsafe before file existence/tool checks.
+  # Expected: structured unsafe-path, no tool call or recreated target directory.
+  $missingTarget = Join-Path $fixture 'missing-link-target'
+  [IO.Directory]::CreateDirectory($missingTarget) | Out-Null
+  New-TestDirectoryLink $junction $missingTarget
+  Remove-Item -LiteralPath $missingTarget -Force
+  try {
+    $dangling = Invoke-Adapter @{ Files = @('src/junction/file.js') }
+    Assert-True ($dangling.Code -eq 2 -and $dangling.Payload.results[0].reason -eq 'unsafe-path') 'Dangling formatter ancestor was not refused as unsafe.'
+    Assert-NoChange $log $logHash 'Dangling process prevention'
+    Assert-True (-not (Test-Path -LiteralPath $missingTarget)) 'Dangling target was recreated.'
+  } finally { Remove-TestLink $junction }
 
   # FT-05 batch failure: one valid candidate and one formatter rejection.
   # Expected: Apply2 with both originals unchanged, no partial precompute writes.
@@ -435,7 +485,8 @@ try {
   [IO.File]::WriteAllText((Join-Path $oldPackage 'VERSION'), '1.0.2', $utf8)
   [IO.File]::WriteAllText((Join-Path $newPackage 'VERSION'), '1.0.3', $utf8)
   $worker = Join-Path $root 'skills/team-core/scripts/format-code-powershell.ps1'
-  foreach ($entry in @($helper, $worker)) {
+  $filesystemHelper = Join-Path $root 'skills/team-core/scripts/platform-filesystem.ps1'
+  foreach ($entry in @($helper, $worker, $filesystemHelper)) {
     Assert-True (Test-Path -LiteralPath $entry -PathType Leaf) 'Installed helper/worker asset missing.'
     Copy-Item -LiteralPath $entry `
       -Destination (Join-Path $newPackage ('skills/team-core/scripts/' + [IO.Path]::GetFileName($entry)))
@@ -450,12 +501,12 @@ try {
   [IO.File]::WriteAllText($personal, '# Personal untouched', $utf8)
   $personalHash = Fingerprint $personal
   & $manager -Action Deploy -SourceRoot $newPackage @deployArgs | Out-Null
-  foreach ($entry in @($helper, $worker)) {
+  foreach ($entry in @($helper, $worker, $filesystemHelper)) {
     $installed = Join-Path $fakeAgents ('skills/team-core/scripts/' + [IO.Path]::GetFileName($entry))
     Assert-True ((Fingerprint $entry) -ceq (Fingerprint $installed)) 'Installed formatter byte mismatch.'
   }
   & $manager -Action Deploy -SourceRoot $oldPackage @deployArgs | Out-Null
-  foreach ($entry in @($helper, $worker)) {
+  foreach ($entry in @($helper, $worker, $filesystemHelper)) {
     $removedPath = Join-Path $fakeAgents ('skills/team-core/scripts/' + [IO.Path]::GetFileName($entry))
     Assert-True (-not (Test-Path -LiteralPath $removedPath)) 'Downgrade left formatter helper residue.'
   }

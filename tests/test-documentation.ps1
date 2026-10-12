@@ -71,6 +71,9 @@ try {
     -Destination "$sandbox/runtime/platform-filesystem.ps1"
   $script=$legacyScript
   & $script -Action Initialize -ProjectRoot $sandbox -AdditionalPaths 'notes' | Out-Null
+  $initialState=Get-Content "$sandbox/docs/governance/documentation.json" -Raw | ConvertFrom-Json
+  $expectedKitVersion=(Get-Content -LiteralPath (Join-Path $repo 'VERSION') -Raw).Trim()
+  Assert ($initialState.kitVersion -ceq $expectedKitVersion) 'Initial documentation provenance differs from the kit release.'
   Assert ((Get-Content "$sandbox/docs/PRD/product.md" -Raw) -ceq $baselinePrd) 'Adoption changed PRD.'
   Assert ((Get-Content "$sandbox/docs/legacy/old.md" -Raw) -ceq $baselineLegacy) 'Adoption changed legacy docs.'
   Assert ((Get-Content "$sandbox/src/login.ts" -Raw) -ceq $baselineSource) 'Adoption changed source.'
@@ -93,6 +96,9 @@ try {
   Record (New-Review)
   & $script -Action Validate -ProjectRoot $sandbox -Scope login -Task 'Add login' | Out-Null
   $freshState=Get-Content "$sandbox/docs/governance/documentation.json" -Raw | ConvertFrom-Json
+  $freshRecord=Get-Content "$sandbox/docs/governance/reviews/login.json" -Raw | ConvertFrom-Json
+  Assert ($freshState.kitVersion -ceq $expectedKitVersion -and $freshRecord.kitVersion -ceq $expectedKitVersion) `
+    'Refreshed documentation state/review provenance differs from the kit release.'
   Assert ($freshState.policyVersion -eq 3 -and $freshState.schemaVersion -eq 1) `
     'Fresh review did not preserve schema1 while upgrading policy3.'
   Assert ($freshState.initializedAt -ceq $legacyState.initializedAt) 'Upgrade reset adoption.'

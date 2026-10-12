@@ -13,6 +13,7 @@ $temporaryParent = Get-TestTemporaryParent
 $testRoot = Join-Path $temporaryParent ('codex-setup-test-' + [guid]::NewGuid().ToString('N'))
 $pwsh = Get-TestPowerShell
 $caseCount = 0
+$expectedSkillCount = @(Get-ChildItem -LiteralPath (Join-Path $repo 'skills') -Directory).Count
 
 function Assert-Setup([bool]$Condition, [string]$Message) {
   if (-not $Condition) { throw $Message }
@@ -239,7 +240,7 @@ printf 'SETUP_UPDATECHECK=%s\n' "${POWERSHELL_UPDATECHECK-unset}"
       Assert-Setup (-not (Test-Path $codex) -and -not (Test-Path $agents)) 'Install preview created target files.'
 
       $installed=Invoke-SetupCase -Action Install -CodexHome $codex -AgentsHome $agents
-      Assert-Setup ($installed.success -and $installed.status -eq 'installed_verified' -and $installed.installation.attempted -and $installed.installation.verified -and $installed.discovery.passed -and $installed.discovery.matchedCount -eq 13) 'Install did not verify receipt and all 13 exact Skills.'
+      Assert-Setup ($installed.success -and $installed.status -eq 'installed_verified' -and $installed.installation.attempted -and $installed.installation.verified -and $installed.discovery.passed -and $installed.discovery.expectedCount -eq $expectedSkillCount -and $installed.discovery.matchedCount -eq $expectedSkillCount) 'Install did not verify receipt and every source Skill.'
       $receiptPath=Join-Path $agents 'codex-multi-agent/install-receipt.json'
       Assert-Setup (Test-Path -LiteralPath $receiptPath) 'Setup installation omitted its managed receipt.'
       $beforeCodex=Get-SetupTestFingerprint $codex; $beforeAgents=Get-SetupTestFingerprint $agents
@@ -264,6 +265,110 @@ printf 'SETUP_UPDATECHECK=%s\n' "${POWERSHELL_UPDATECHECK-unset}"
       Assert-Setup ($forced.success -and $forced.installation.verified) 'Explicit Force did not recover a conflicting managed install.'
       $backups=@(Get-ChildItem -LiteralPath (Join-Path $agents 'codex-multi-agent/backups') -Filter 'team-architect.toml' -File -Recurse | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -eq '# setup fixture user customization' })
       Assert-Setup ($backups.Count -gt 0) 'Explicit Force did not preserve the modified file in a backup.'
+
+      # Parse errors in installed instructions are repairable managed conflicts.
+      # The fake client reads the selected files; Force must reach the installer,
+      # retain the damaged bytes, and then pass strict fresh-client discovery.
+      $damagedSkill=Join-Path $agents 'skills/team-review/SKILL.md'
+      $damagedText='invalid setup fixture frontmatter'
+      [IO.File]::WriteAllText($damagedSkill,$damagedText)
+      $damagedBefore=Get-SetupTestFingerprint $agents
+      $parseFailure=Invoke-SetupCase -Mode parse-skills -Action Verify -CodexHome $codex -AgentsHome $agents
+      Assert-Setup (-not $parseFailure.success -and 'skill_discovery_errors' -in $parseFailure.errors -and (Get-SetupTestFingerprint $agents) -eq $damagedBefore) 'Strict verification accepted or changed a malformed installed Skill.'
+      $unforcedRepair=Invoke-SetupCase -Mode parse-skills -Action Install -CodexHome $codex -AgentsHome $agents
+      Assert-Setup (-not $unforcedRepair.success -and 'installer_failed' -in $unforcedRepair.errors -and (Get-SetupTestFingerprint $agents) -eq $damagedBefore) 'Repair replaced damaged managed instructions without explicit Force.'
+      $repairPreview=Invoke-SetupCase -Mode parse-skills -Action Install -CodexHome $codex -AgentsHome $agents -Preview $true -Force $true
+      Assert-Setup ($repairPreview.success -and -not $repairPreview.installation.attempted -and (Get-SetupTestFingerprint $agents) -eq $damagedBefore) 'Force preview could not inspect a damaged Skill without changing it.'
+      $repaired=Invoke-SetupCase -Mode parse-skills -Action Install -CodexHome $codex -AgentsHome $agents -Force $true
+      Assert-Setup ($repaired.success -and $repaired.installation.verified -and $repaired.discovery.passed -and (Get-Content -LiteralPath $damagedSkill -Raw) -ceq (Get-Content -LiteralPath (Join-Path $repo 'skills/team-review/SKILL.md') -Raw)) 'Force did not repair malformed managed instructions and verify their discovery.'
+      $damagedBackups=@(Get-ChildItem -LiteralPath (Join-Path $agents 'codex-multi-agent/backups') -Filter 'SKILL.md' -File -Recurse | Where-Object { (Get-Content -LiteralPath $_.FullName -Raw) -ceq $damagedText })
+      Assert-Setup ($damagedBackups.Count -eq 1) 'Force repair did not preserve the damaged Skill bytes in its before-image.'
+
+      $postFailure=Invoke-SetupCase -Mode skill-errors -Action Install -CodexHome (Join-Path $testRoot 'post-error codex') -AgentsHome (Join-Path $testRoot 'post-error agents')
+      Assert-Setup (-not $postFailure.success -and $postFailure.installation.attempted -and $postFailure.installation.verified -and 'skill_discovery_errors' -in $postFailure.errors) 'Protocol readiness hid discovery errors in the strict post-install probe.'
+
+      # A later valid Skill extends the expected inventory without a count edit.
+      # Reuse the complete isolated validator fixture, then install all resources.
+      $expandedSource=Join-Path $testRoot 'expanded source'
+      $null=New-Item -ItemType Directory -Path $expandedSource
+      foreach ($item in @('agents','skills','scripts','VERSION','CHANGELOG.md','CHANGELOG.zh-CN.md')) {
+        Copy-Item -LiteralPath (Join-Path $repo $item) -Destination $expandedSource -Recurse
+      }
+      foreach ($relative in @('docs/formatter-tool.md','docs/verification/active/formatter-tool.md')) {
+        $destination=Join-Path $expandedSource $relative
+        $null=[IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($destination))
+        Copy-Item -LiteralPath (Join-Path $repo $relative) -Destination $destination
+      }
+      $extraDirectory=Join-Path $expandedSource 'skills/setup-extra-fixture'
+      $null=New-Item -ItemType Directory -Path $extraDirectory
+      $extraContent="---`nname: setup-extra-fixture`ndescription: Local setup inventory regression.`n---`n`n## When to activate`nUse for the isolated inventory test.`n`n## Output contract`nReport the test result.`n`n[Execution contract](../team-core/references/execution-contract.md)`n"
+      [IO.File]::WriteAllText((Join-Path $extraDirectory 'SKILL.md'),$extraContent)
+      try {
+        $script:SetupRoot=$expandedSource
+        $expandedCodex=Join-Path $testRoot 'expanded codex'
+        $expandedAgents=Join-Path $testRoot 'expanded agents'
+        $expanded=Invoke-SetupCase -Mode parse-skills -Action Install -CodexHome $expandedCodex -AgentsHome $expandedAgents
+        Assert-Setup ($expanded.success -and $expanded.discovery.expectedCount -eq ($expectedSkillCount+1) -and $expanded.discovery.matchedCount -eq ($expectedSkillCount+1) -and (Get-Content -LiteralPath (Join-Path $expandedAgents 'skills/setup-extra-fixture/SKILL.md') -Raw) -ceq $extraContent) 'Setup omitted an additional valid source Skill or retained a fixed expected count.'
+        Remove-Item -LiteralPath (Join-Path $extraDirectory 'SKILL.md')
+        $missingEntry=Invoke-SetupCase -Action Install -CodexHome (Join-Path $testRoot 'invalid source codex') -AgentsHome (Join-Path $testRoot 'invalid source agents')
+        Assert-Setup (-not $missingEntry.success -and 'source_skills_invalid' -in $missingEntry.errors -and -not $missingEntry.installation.attempted) 'Source inventory silently ignored a Skill directory missing its entrypoint.'
+      } finally { $script:SetupRoot=$repo }
+
+      # Exercise the actual native-OS layout decision using only owned private
+      # roots. Unsupported layouts must stop before context/probe/installer calls,
+      # including a missing installation and WhatIf, without relaxing the mask.
+      $layoutRoot=Join-Path $testRoot 'private layout fixtures'
+      $privateConfig=Join-Path $layoutRoot '.config'
+      $privateCodex=Join-Path $layoutRoot '.codex'
+      $selectedPrivateCodex=Join-Path $layoutRoot 'selected codex'
+      foreach ($path in @($privateConfig,$privateCodex,$selectedPrivateCodex)) {
+        $null=New-Item -ItemType Directory -Path $path -Force
+        [IO.File]::WriteAllText((Join-Path $path 'private-sentinel'),'owned private fixture must remain unchanged')
+      }
+      $layoutBefore=Get-SetupTestFingerprint $layoutRoot
+      $privateRootFunction=${function:Get-SetupPrivateRoots}
+      $probeFunction=${function:Invoke-SetupProbe}
+      $managerFunction=${function:Invoke-SetupManager}
+      $script:SetupLayoutPrivateRoots=@($privateConfig,$privateCodex,$selectedPrivateCodex)
+      $script:SetupLayoutProbeCalls=0; $script:SetupLayoutManagerCalls=0
+      function Get-SetupPrivateRoots { return $script:SetupLayoutPrivateRoots }
+      function Invoke-SetupProbe { $script:SetupLayoutProbeCalls++; throw 'unexpected_layout_probe' }
+      function Invoke-SetupManager { $script:SetupLayoutManagerCalls++; throw 'unexpected_layout_installer' }
+      try {
+        $layoutClient=Join-Path (New-SetupScenario) 'setup-fake-codex.ps1'
+        $layouts=@($privateConfig,$privateCodex,$selectedPrivateCodex | ForEach-Object { Join-Path $_ 'kit-agents' })
+        if ($IsMacOS) { $layouts+=Join-Path $layoutRoot '.CONFIG/kit-agents' }
+        foreach ($selectedAgents in $layouts) {
+          foreach ($row in @(@('Doctor',$false),@('Install',$false),@('Install',$true),@('Verify',$false))) {
+            $scratchBefore=$script:OwnedSetupScratch.Count
+            $rejected=Invoke-SetupMain -Action $row[0] -Preview $row[1] -CodexPath $layoutClient -CodexHome (Join-Path $testRoot 'layout client codex') -AgentsHome $selectedAgents
+            Assert-Setup (-not $rejected.success -and 'unsupported_agents_layout' -in $rejected.errors -and $rejected.guidance.Count -gt 0 -and -not $rejected.installation.attempted -and $script:SetupLayoutProbeCalls -eq 0 -and $script:SetupLayoutManagerCalls -eq 0 -and $script:OwnedSetupScratch.Count -eq $scratchBefore) 'A masked private layout was not rejected before client/context/installer activity.'
+            Assert-Setup ((Get-SetupTestFingerprint $layoutRoot) -ceq $layoutBefore) 'Unsupported layout checking changed private fixture bytes.'
+            $caseCount++
+          }
+        }
+        # Equality and ancestor overlap use selected CodexHome-like fixture roots.
+        $equalSkills=Join-Path $layoutRoot 'equal agents/skills'
+        $ancestorSkills=Join-Path $layoutRoot 'ancestor agents/skills'
+        foreach ($row in @(@($equalSkills,$equalSkills),@((Join-Path $ancestorSkills 'private child'),$ancestorSkills))) {
+          $script:SetupLayoutPrivateRoots=@($row[0])
+          $rejected=$false
+          try { Assert-SetupSkillsLayout $row[1] } catch { $rejected=$_.Exception.Message -ceq 'unsupported_agents_layout' }
+          Assert-Setup $rejected 'Private-layout equality/ancestor overlap was accepted.'
+          $caseCount++
+        }
+        $script:SetupLayoutPrivateRoots=@($privateConfig)
+        Assert-SetupSkillsLayout (Join-Path $layoutRoot '.config-kit/skills')
+        $caseCount++
+        if ($IsLinux) {
+          Assert-SetupSkillsLayout (Join-Path $layoutRoot '.CONFIG/skills')
+          $caseCount++
+        }
+      } finally {
+        if ($privateRootFunction) { Set-Item -LiteralPath function:Get-SetupPrivateRoots -Value $privateRootFunction } else { Remove-Item -LiteralPath function:Get-SetupPrivateRoots }
+        Set-Item -LiteralPath function:Invoke-SetupProbe -Value $probeFunction
+        Set-Item -LiteralPath function:Invoke-SetupManager -Value $managerFunction
+      }
 
       $receipt=Get-Content -LiteralPath $receiptPath -Raw
       [IO.File]::WriteAllText($receiptPath,'{"schemaVersion":999}')

@@ -70,16 +70,21 @@ while ($null -ne ($line = [Console]::In.ReadLine())) {
       if (-not $request.params.forceReload -or $mode -eq 'missing-capability') { Send-Failure $request.id; continue }
       $skillsRoot = Join-Path $cwd '.agents/skills'
       $skills = @()
+      $errors = @()
       if (Test-Path -LiteralPath $skillsRoot -PathType Container) {
         $skills = @(Get-ChildItem -LiteralPath $skillsRoot -Directory | ForEach-Object {
-          @{name=$_.Name;path=(Join-Path $_.FullName 'SKILL.md');enabled=$true}
+          $entryPath=Join-Path $_.FullName 'SKILL.md'
+          if ($mode -eq 'parse-skills' -and (-not (Test-Path -LiteralPath $entryPath -PathType Leaf) -or (Get-Content -LiteralPath $entryPath -Raw) -notmatch '(?s)^---\s*\r?\nname:\s*[a-z0-9-]+\s*\r?\ndescription:\s*.+?\r?\n---')) {
+            $errors += @{path=$entryPath;message='FAKE_PRIVATE_DIAGNOSTIC_DO_NOT_EXPOSE'}
+          } else {
+            @{name=$_.Name;path=$entryPath;enabled=$true}
+          }
         })
       }
       if ($mode -eq 'missing-skill') { $skills = @($skills | Select-Object -Skip 1) }
       if ($mode -eq 'disabled-skill') { $skills[0].enabled = $false }
       if ($mode -eq 'wrong-path') { $skills[0].path = Join-Path $PSScriptRoot 'unrelated/SKILL.md' }
       if ($mode -eq 'duplicate-skill') { $skills += $skills[0] }
-      $errors = @()
       if ($mode -eq 'skill-errors') { $errors = @(@{path='fixture';message='FAKE_PRIVATE_DIAGNOSTIC_DO_NOT_EXPOSE'}) }
       if ($mode -eq 'wrong-cwd') { $cwd = $PSScriptRoot }
       if ($mode -eq 'string-enabled' -and $skills.Count) { $skills[0].enabled = 'true' }

@@ -40,6 +40,22 @@ function Assert-SetupPlainPath([string]$Path) {
   }
 }
 
+function Get-SetupPrivateRoots {
+  return @((Join-Path $HOME '.codex'),(Join-Path $HOME '.config'),$script:SetupCodexHome) |
+    Select-Object -Unique | ForEach-Object { (Resolve-SetupPath $_).TrimEnd('\','/') }
+}
+
+function Assert-SetupSkillsLayout([string]$SkillsRoot) {
+  $selected=(Resolve-SetupPath $SkillsRoot).TrimEnd('\','/')
+  # macOS's common case-insensitive volumes can resolve a differently spelled
+  # private path to the masked directory. Linux retains exact path comparison.
+  $comparison=if ($IsMacOS) { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+  $separator=[IO.Path]::DirectorySeparatorChar
+  foreach ($privateRoot in Get-SetupPrivateRoots) {
+    if ([string]::Equals($selected,$privateRoot,$comparison) -or $selected.StartsWith($privateRoot+$separator,$comparison) -or $privateRoot.StartsWith($selected+$separator,$comparison)) { throw 'unsupported_agents_layout' }
+  }
+}
+
 function Get-SetupSandbox($Scratch, $CodexPath, $SkillsRoot) {
   # Client state is isolated independently of the sandbox. The sandbox also denies
   # network access and grants writes only beneath this run's owned scratch root.
@@ -47,8 +63,7 @@ function Get-SetupSandbox($Scratch, $CodexPath, $SkillsRoot) {
     if (-not [IO.File]::Exists('/usr/bin/sandbox-exec')) { throw 'sandbox_unavailable' }
     function Quote-Seatbelt([string]$Value) { return '"'+$Value.Replace('\','\\').Replace('"','\"')+'"' }
     $profile = '(version 1)(allow default)(deny network*)(deny file-write*)(allow file-write* (subpath '+(Quote-Seatbelt $Scratch)+'))'
-    foreach ($secretRoot in @((Join-Path $HOME '.codex'),(Join-Path $HOME '.config'),$script:SetupCodexHome) | Select-Object -Unique) {
-      $secretRoot = Resolve-SetupPath $secretRoot
+    foreach ($secretRoot in Get-SetupPrivateRoots) {
       # A user may keep the executable within .codex; permit that exact file only.
       $profile += '(deny file-read* (require-all (subpath '+(Quote-Seatbelt $secretRoot)+') (require-not (literal '+(Quote-Seatbelt $CodexPath)+'))))'
     }
@@ -60,8 +75,7 @@ function Get-SetupSandbox($Scratch, $CodexPath, $SkillsRoot) {
     $launcher = @('/usr/bin/bwrap','/bin/bwrap') | Where-Object { [IO.File]::Exists($_) } | Select-Object -First 1
     if (-not $launcher) { throw 'sandbox_unavailable' }
     $arguments = @('--unshare-user','--unshare-pid','--unshare-net','--die-with-parent','--new-session','--ro-bind','/','/','--bind',$Scratch,$Scratch,'--dev','/dev','--proc','/proc')
-    foreach ($secretRoot in @((Join-Path $HOME '.codex'),(Join-Path $HOME '.config'),$script:SetupCodexHome) | Select-Object -Unique) {
-      $secretRoot = Resolve-SetupPath $secretRoot
+    foreach ($secretRoot in Get-SetupPrivateRoots) {
       if ([IO.Directory]::Exists($secretRoot)) {
         if ($CodexPath.StartsWith($secretRoot+'/',[StringComparison]::Ordinal)) { throw 'client_inside_private_config' }
         $arguments += @('--ro-bind',(Join-Path $Scratch 'empty'),$secretRoot)
@@ -170,7 +184,7 @@ function Invoke-SetupRequest($Context, $Process, [string]$Method, $Parameters) {
   throw 'client_protocol_invalid'
 }
 
-function Invoke-SetupProbe($Context) {
+function Invoke-SetupProbe($Context, [switch]$ProtocolOnly) {
   $versionProcess = Start-SetupClient $Context @('--version')
   try {
     $line = Read-SetupLine $versionProcess ([datetime]::UtcNow.AddSeconds($Context.Timeout))
@@ -186,10 +200,14 @@ function Invoke-SetupProbe($Context) {
     $process.StandardInput.WriteLine('{"method":"initialized"}')
     $process.StandardInput.Flush()
     $result = Invoke-SetupRequest $Context $process 'skills/list' @{cwds=@($Context.Probe);forceReload=$true}
-    if ($result -isnot [Collections.IDictionary] -or -not $result.Contains('data')) { throw 'client_protocol_invalid' }
+    if ($result -isnot [Collections.IDictionary] -or -not $result.Contains('data') -or $result.data -isnot [Array]) { throw 'client_protocol_invalid' }
     $entries=@($result.data)
     if ($entries.Count -ne 1 -or $entries[0].cwd -cne $Context.Probe -or -not $entries[0].Contains('skills') -or -not $entries[0].Contains('errors')) { throw 'client_protocol_invalid' }
-    if (@($entries[0].errors).Count -ne 0) { throw 'skill_discovery_errors' }
+    if ($entries[0].skills -isnot [Array] -or $entries[0].errors -isnot [Array]) { throw 'client_protocol_invalid' }
+    # Installation readiness is a protocol check, not approval of existing files
+    # that Force may legitimately repair. Doctor/Verify and post-install probes
+    # still reject every discovery error before claiming an installed-state pass.
+    if (-not $ProtocolOnly -and @($entries[0].errors).Count -ne 0) { throw 'skill_discovery_errors' }
     return @{version=$version; skills=@($entries[0].skills)}
   } finally { Stop-SetupProcess $process }
 }
@@ -266,7 +284,7 @@ function Get-SetupPreview([string]$Output, [string]$CodexHome, [string]$AgentsHo
 function Invoke-SetupMain {
   [CmdletBinding()]
   param([string]$Action='Doctor',[string]$CodexPath,[string]$CodexHome,[string]$AgentsHome,[int]$TimeoutSeconds=120,[bool]$Preview=$false,[bool]$Force=$false)
-  $report=[ordered]@{schemaVersion=1;action=$Action;success=$false;status='not_ready';platform=@{os='unsupported';architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()};prerequisites=@{powershell=($PSVersionTable.PSVersion.Major -ge 7);codex=$false;sandbox=$false;protocol=$false};installation=@{attempted=$false;verified=$false;preview=$Preview};discovery=@{checked=$false;passed=$false;expectedCount=13;matchedCount=0;mode='isolated-project-root'};cleanup=@{processesStopped=$true;scratchRemoved=$true;processScope='tracked-client-processes'};errors=@();guidance=@()}
+  $report=[ordered]@{schemaVersion=1;action=$Action;success=$false;status='not_ready';platform=@{os='unsupported';architecture=[Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant()};prerequisites=@{powershell=($PSVersionTable.PSVersion.Major -ge 7);codex=$false;sandbox=$false;protocol=$false};installation=@{attempted=$false;verified=$false;preview=$Preview};discovery=@{checked=$false;passed=$false;expectedCount=0;matchedCount=0;mode='isolated-project-root'};cleanup=@{processesStopped=$true;scratchRemoved=$true;processScope='tracked-client-processes'};errors=@();guidance=@()}
   $context=$null
   try {
     $report.platform.os=if ($IsMacOS) {'macos'} elseif ($IsLinux) {'linux'} else {'unsupported'}
@@ -274,8 +292,17 @@ function Invoke-SetupMain {
     $CodexHome=Resolve-SetupPath $CodexHome; $AgentsHome=Resolve-SetupPath $AgentsHome
     $script:SetupCodexHome=$CodexHome
     foreach ($path in @($CodexHome,$AgentsHome)) { Assert-SetupPlainPath $path }
-    $names=@(Get-ChildItem -LiteralPath (Join-Path $script:SetupRoot 'skills') -Directory | Where-Object { [IO.File]::Exists((Join-Path $_.FullName 'SKILL.md')) } | ForEach-Object { $_.Name } | Sort-Object)
-    if ($names.Count -ne 13) { throw 'source_skills_invalid' }
+    # The offline client cannot discover a tree hidden by its private-state mask.
+    # Reject every action before a probe or installer could create partial state.
+    Assert-SetupSkillsLayout (Join-Path $AgentsHome 'skills')
+    # Every source Skill is required. Missing entries must fail rather than being
+    # silently excluded, and a valid later bundle must not need a count edit.
+    $names=@(Get-ChildItem -LiteralPath (Join-Path $script:SetupRoot 'skills') -Directory -Force | ForEach-Object {
+      if ($_.Name -cnotmatch '^[a-z0-9][a-z0-9-]*$' -or -not [IO.File]::Exists((Join-Path $_.FullName 'SKILL.md'))) { throw 'source_skills_invalid' }
+      $_.Name
+    } | Sort-Object)
+    if ($names.Count -eq 0) { throw 'source_skills_invalid' }
+    $report.discovery.expectedCount=$names.Count
     if (-not $CodexPath) {
       $command=Get-Command codex -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
       if (-not $command) { throw 'codex_missing' }
@@ -283,8 +310,11 @@ function Invoke-SetupMain {
     }
     $CodexPath=Resolve-SetupPath $CodexPath
     if (-not [IO.File]::Exists($CodexPath)) { throw 'codex_missing' }
-    $context=New-SetupContext $CodexPath (Join-Path $AgentsHome 'skills') $TimeoutSeconds
-    $probe=Invoke-SetupProbe $context
+    # Keep the prerequisite probe independent of a damaged/missing installation.
+    # A new context exposes the selected installed Skills only after deployment.
+    $initialSkillsRoot=if ($Action -eq 'Install') { '' } else { Join-Path $AgentsHome 'skills' }
+    $context=New-SetupContext $CodexPath $initialSkillsRoot $TimeoutSeconds
+    $probe=Invoke-SetupProbe $context -ProtocolOnly:($Action -eq 'Install')
     $report.prerequisites.codex=$true; $report.prerequisites.sandbox=$true; $report.prerequisites.protocol=$true
     $report.prerequisites.version=$probe.version
     if ($Action -eq 'Doctor') {
@@ -319,7 +349,7 @@ function Invoke-SetupMain {
   } catch {
     # Only local allowlisted categories leave the process; never emit raw client,
     # installer, OS diagnostics, authentication data, or config contents.
-    $known=@('unsafe_path','sandbox_unavailable','client_inside_private_config','unsupported_platform','client_start_failed','process_cleanup_failed','client_timeout','client_protocol_closed','client_protocol_invalid','client_protocol_error','client_version_invalid','skill_discovery_errors','installer_start_failed','installer_timeout','installer_failed','installer_preview_invalid','codex_missing','source_skills_invalid','receipt_verification_failed','cleanup_failed','skill_discovery_mismatch')
+    $known=@('unsafe_path','sandbox_unavailable','client_inside_private_config','unsupported_platform','unsupported_agents_layout','client_start_failed','process_cleanup_failed','client_timeout','client_protocol_closed','client_protocol_invalid','client_protocol_error','client_version_invalid','skill_discovery_errors','installer_start_failed','installer_timeout','installer_failed','installer_preview_invalid','codex_missing','source_skills_invalid','receipt_verification_failed','cleanup_failed','skill_discovery_mismatch')
     if ($context -and $context.VerifiedVersion) {
       $report.prerequisites.codex=$true; $report.prerequisites.sandbox=$true; $report.prerequisites.version=$context.VerifiedVersion
     }
@@ -328,7 +358,8 @@ function Invoke-SetupMain {
     if ($category -eq 'process_cleanup_failed') { $report.cleanup.processesStopped=$false }
     $report.errors+= $category
     $report.status='failed'; $report.success=$false
-    if ($category -eq 'codex_missing') { $report.guidance+='Install the official native Codex CLI using an explicitly approved network route, then set -CodexPath. https://learn.chatgpt.com/docs/codex/cli' }
+    if ($category -eq 'unsupported_agents_layout') { $report.guidance+='Select the default .agents home or another AgentsHome whose Skills directory does not overlap private .codex/.config or the selected CodexHome. Setup cannot discover Skills hidden by its privacy sandbox.' }
+    elseif ($category -eq 'codex_missing') { $report.guidance+='Install the official native Codex CLI using an explicitly approved network route, then set -CodexPath. https://learn.chatgpt.com/docs/codex/cli' }
     elseif ($category -eq 'unsupported_platform') { $report.guidance+='Use native PowerShell 7 on macOS or Linux, with x64 or ARM64 architecture.' }
     elseif (-not $report.prerequisites.sandbox) { $report.guidance+='Client checks require a working OS no-network sandbox: sandbox-exec on macOS; Bubblewrap with permitted user/network namespaces on Linux. Ask your administrator if host policy blocks these. Setup never changes host policy or uses sudo.' }
     else { $report.guidance+='Check the selected installation and client compatibility. Existing installation conflicts require review; -Force is never enabled automatically.' }

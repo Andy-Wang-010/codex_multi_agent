@@ -49,6 +49,20 @@ try {
   # Scenario: an intact package. Expected: validation succeeds before mutations.
   Assert-Condition (Invoke-CopiedValidator) 'Baseline validation failed in an isolated package copy.'
 
+  # Scenario: a release leaves any emitted provenance stamp behind.
+  # Expected: packaging rejects it and accepts an exact source restoration.
+  foreach ($producer in @('documentation.ps1','project-rules.ps1','format-code.ps1','ai-simulation.ps1')) {
+    $relative="skills/team-core/scripts/$producer"
+    $path=Join-Path $testRoot $relative
+    $text=Get-Content -LiteralPath $path -Raw
+    $stale=[regex]::Replace($text, "(\bkitVersion\s*=\s*')\d+\.\d+\.\d+(')", '${1}999.0.0${2}')
+    Assert-Condition ($stale -cne $text) "Missing provenance fixture in $producer."
+    [IO.File]::WriteAllText($path,$stale,[Text.UTF8Encoding]::new($false))
+    Assert-Condition (-not (Invoke-CopiedValidator)) "Validator accepted stale provenance in $producer."
+    Copy-Item -LiteralPath (Join-Path $root $relative) -Destination $path -Force
+    Assert-Condition (Invoke-CopiedValidator) "Validator failed after restoring $producer provenance."
+  }
+
   # DE-01: a copied package without the required shared design reference is incomplete.
   # Expected: the real package validator rejects omission, then accepts exact restoration.
   $designReference=Join-Path $testRoot 'skills/team-core/references/design-exploration.md'

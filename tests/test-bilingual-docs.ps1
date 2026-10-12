@@ -95,6 +95,23 @@ try {
   Reset-Fixture -IncludeUnreleased
   $pendingBaseline = Invoke-Validation $testRoot
   Assert-Condition $pendingBaseline.Passed "Equivalent Unreleased fixture rejected: $($pendingBaseline.Output)"
+  # Scenario: the rebased preview branches independently published 0.10.1.
+  # Expected: retain exactly the two historical dates; reject other collisions.
+  foreach ($case in @('historical pair','same date','different date','third entry','ordinary duplicate')) {
+    Reset-Fixture
+    $history="`n## [0.10.1] - 2026-10-10`n- Historical portability preview.`n`n## [0.10.1] - 2026-10-04`n- Historical upstream preview.`n"
+    switch ($case) {
+      'same date' { $history=$history.Replace('2026-10-04','2026-10-10') }
+      'different date' { $history=$history.Replace('2026-10-04','2026-10-05') }
+      'third entry' { $history+="`n## [0.10.1] - 2026-10-12`n- Duplicate preview.`n" }
+      'ordinary duplicate' { $history=$history.Replace('[0.10.1]','[0.9.1]') }
+    }
+    foreach ($file in @('CHANGELOG.md','CHANGELOG.zh-CN.md')) {
+      Add-Content -LiteralPath (Join-Path $testRoot $file) -Value $history
+    }
+    $result=Invoke-Validation $testRoot
+    Assert-Condition ($result.Passed -eq ($case -eq 'historical pair')) "Wrong historical-release validation: $case. $($result.Output)"
+  }
   Reset-Fixture
   # Scenario: translated prose has extra blank lines outside executable code.
   # Expected: harmless layout differences pass rather than requiring line-for-line translation.

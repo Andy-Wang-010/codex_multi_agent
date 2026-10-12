@@ -133,9 +133,8 @@ try {
   Write-Host 'Isolated test directory removed.'
 }
 
-# Keep setup coverage inside this existing suite so the portable runner retains
-# its established 14 check names. A separate process prevents test mocks or
-# fixture preferences from changing the installer tests above.
+# Keep setup coverage inside the installation suite. A separate process prevents
+# test mocks or fixture preferences from changing the installer tests above.
 $setupCheck = Invoke-TestPowerShell -Arguments @('-File', (Join-Path $PSScriptRoot 'test-setup.ps1')) -TimeoutSeconds 600
 if ($setupCheck.Output) { Write-Host $setupCheck.Output.TrimEnd() }
 if ($setupCheck.Errors) { Write-Host $setupCheck.Errors.TrimEnd() }

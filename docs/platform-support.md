@@ -1,6 +1,6 @@
 # Platform support and verification
 
-The kit uses one PowerShell implementation for Windows, macOS, and Linux. Agent profiles, Skills, installation receipts, and recovery commands share the same layout and interfaces. The [macOS/Linux setup entrypoint](setup.md) provides prerequisite checks, installation, and offline client Skill verification. Version 0.10.4 removes the separate developer acceptance harnesses, VM launcher, asset locks, and per-run reports from the current tree; user setup, runtime support, reusable regression tests, and CI remain available. This release remains a review preview.
+The kit uses one PowerShell implementation for Windows, macOS, and Linux. Agent profiles, Skills, installation receipts, and recovery commands share the same layout and interfaces. The [macOS/Linux setup entrypoint](setup.md) provides prerequisite checks, installation, and offline client Skill verification. Version 0.10.4 removed the separate developer acceptance harnesses, VM launcher, asset locks, and per-run reports from the current tree; user setup, runtime support, reusable regression tests, and CI remain available. This release remains a review preview.
 
 ## Runtime and installation
 
@@ -17,7 +17,7 @@ pwsh -NoProfile -File ./scripts/update-user.ps1
 
 Installation defaults to the user's `.codex/agents` and `.agents/skills` directories. `-CodexHome` and `-AgentsHome` select alternative non-overlapping roots. Global Codex configuration is configured separately. Directory installation can operate without Git; deploying a local `-GitRef` requires Git. Verification and snapshot recovery remain independent of Git and of the source checkout. See [safe deployment](safe-deployment.md) for receipts, backups, restore, recovery, and pruning.
 
-The full developer suite additionally requires Git for local deployment fixtures and Node.js for the optional OpenSpec adapter's offline CLI fixtures. A real OpenSpec installation is not needed for the default suite. The optional real adapter retains its pinned version and Node.js requirement in the [integration contract](../skills/team-core/references/openspec-integration.md).
+The full developer suite additionally requires Git for local deployment and repository-policy fixtures, and Node.js for the OpenSpec and formatter CLI fixtures. A real OpenSpec installation is not needed for the default suite. The optional real adapter retains its pinned version and Node.js requirement in the [integration contract](../skills/team-core/references/openspec-integration.md).
 
 ## Filesystem contract
 
@@ -41,11 +41,15 @@ pwsh -NoProfile -File ./scripts/test.ps1 -ResultPath ../platform-results.json
 
 Each selected check runs in its own PowerShell process. The runner reports the operating system, process architecture, runtime versions, check outcomes, and a failing exit status when a required check cannot pass. Individual suites own unique temporary fixtures and must clean up those fixtures. Checks never install into real user homes or acquire dependencies. Missing prerequisites are failures, not successful skips.
 
-The default run selects 14 checks: two validators and twelve suites. `-Suite` also accepts a comma-separated string when invoked from zsh or Bash. `-ResultPath` optionally saves a JSON result summary to a chosen file whose parent already exists; keep that generated result outside a clean CI checkout. Platform-specific cases that cannot apply to the current fixture report `NOT APPLICABLE`; an overall suite pass does not establish those cases were exercised. Record case-sensitive-volume and filesystem-permission coverage separately.
+The default run selects 27 checks: two validators and 25 suites, including the upstream AI, generated-artifact, design-exploration, formatter, workflow routing, Git delivery, shared test support, and web engineering checks. `-Suite` also accepts a comma-separated string when invoked from zsh or Bash. `-ResultPath` optionally saves a JSON result summary to a chosen file whose parent already exists; keep that generated result outside a clean CI checkout. Platform-specific cases that cannot apply to the current fixture report `NOT APPLICABLE`; an overall suite pass does not establish those cases were exercised. Record case-sensitive-volume and filesystem-permission coverage separately.
 
 Required coverage includes installation/update, unchanged preview, conflicts and backups, exact downgrade, offline restore, interrupted recovery, separate-process locking, unrelated-file preservation, path containment, symlink/dangling-link refusal, case-sensitive inventory, Unicode paths, metadata validation, and bilingual documentation. Optional real OpenSpec lifecycle results are recorded separately from local CLI-double results.
 
 ## Platform matrix and evidence
+
+Version 1.0.9 integrates upstream master `d1841e1` and expands the runner to 27 checks. On 2026-10-12, focused local checks passed on macOS 26.5.1 ARM64 with PowerShell 7.6.6 and .NET 10.0.12: package/provenance and bilingual validation, the refactored shared test helper and its consumers, Team routing, web guidance, Git delivery, and installation/setup (59 scenarios). The first integration had passed all 23 then-available checks before upstream advanced. Exact-commit hosted results for the final combined branch are recorded in [PR #10](https://github.com/wo-shi-lao-luo/codex_multi_agent/pull/10); the earlier 14-check and 13-Skill results below remain historical.
+
+A separate offline macOS check with native client `0.162.0-alpha.17.2` discovered all 19 Skills, verified installation, rejected a malformed managed Skill, preserved an unchanged Force preview, repaired the Skill with an exact damaged-file backup, and verified the result and cleanup. It used disposable homes with client networking denied. The local APFS volume exercised system aliases, linked/dangling paths and formatter case-alias refusal; case-distinct-file branches require a case-sensitive target such as the Ubuntu CI runner. These checks add no new authentication, inference or live-workflow coverage.
 
 These targets define the initial verification matrix. Source support and recorded execution are separate claims. Record the actual OS release, architecture, PowerShell/.NET version, filesystem, source revision, and result for every run.
 
@@ -61,7 +65,7 @@ The historical [Windows verification](verification/active/project-rules.md) rema
 
 The 0.10.3 setup checks passed on macOS ARM64 and Ubuntu ARM64 with the pinned native client: readiness, unchanged preview, installation, receipt and 13-Skill verification, and reinstall. These were offline checks in disposable homes, with no authentication or inference. They do not add x64 live coverage or repeat the earlier live workflow.
 
-The [hosted run for commit `7b1bfa0`](https://github.com/Andy-Wang-010/codex_multi_agent/actions/runs/38128096920) passed all 14 checks on Windows x64, Ubuntu x64, and macOS ARM64. Per-run JSON files are no longer kept in the current source tree. The earlier acceptance tools, locks, guide, and committed reports (including unsuccessful attempts) can be recovered from Git commit `7b1bfa093a980415156a025e75b281b331b16a2b`. That commit predates this cleanup and its own hosted CI results. Future result files should be saved outside the checkout or retained as CI artifacts.
+The [hosted run for commit `7b1bfa0`](https://github.com/Andy-Wang-010/codex_multi_agent/actions/runs/38128096920) passed all 14 checks on Windows x64, Ubuntu x64, and macOS ARM64. Per-run JSON files are no longer kept in the current source tree. The earlier acceptance tools, locks, guide, and committed reports (including unsuccessful attempts) remain in the rebased history at Git commit `d74c41addbfda69b46d621e7b3a6449692da3469`, before cleanup. Those reports retain their original source identities and do not certify the rebased commit. Future result files should be saved outside the checkout or retained as CI artifacts.
 
 ## CI and live workflow acceptance
 

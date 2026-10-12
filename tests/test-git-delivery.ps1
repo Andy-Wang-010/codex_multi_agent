@@ -18,7 +18,7 @@ if (-not (Test-Path -LiteralPath $helper -PathType Leaf)) {
 }
 if ($RedOnly) { Write-Output 'GD01: public helper exists'; exit 0 }
 
-$tempParent = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
+$tempParent = Get-TestTemporaryParent
 $sandbox = Join-Path $tempParent ('codex-delivery-test-' + [guid]::NewGuid().ToString('N'))
 $gitExe = (Get-Command git -CommandType Application | Select-Object -First 1).Source
 $pwshExe = (Get-Process -Id $PID).Path
@@ -125,6 +125,107 @@ try {
   Assert (-not [string]::IsNullOrWhiteSpace($first.snapshot.indexIdentity)) (
     'GD01: index identity missing.'
   )
+  Assert ($first.snapshot.rawIndexSha256 -ceq
+    (Get-FileHash -LiteralPath (Join-Path $root '.git/index') -Algorithm SHA256).Hash.ToLowerInvariant()) (
+    'GD01: raw index identity does not match the actual file bytes.'
+  )
+
+  # GD11: verified macOS temporary aliases select the same real worktree.
+  # Expected: canonicalization accepts only the known OS alias without mutation.
+  if ($IsMacOS) {
+    $aliasRoot=$null
+    foreach ($pair in @(@('/private/tmp/','/tmp/'),@('/private/var/','/var/'))) {
+      if ($root.StartsWith($pair[0],[StringComparison]::Ordinal)) {
+        $aliasRoot=$pair[1]+$root.Substring($pair[0].Length)
+      }
+    }
+    if ($aliasRoot) {
+      $aliased=Check $aliasRoot Commit ready-for-review
+      Assert ($aliased.snapshot.head -ceq $first.snapshot.head -and
+        $aliased.snapshot.rawIndexSha256 -ceq $first.snapshot.rawIndexSha256) (
+        'GD11: verified system alias changed the selected repository identity.'
+      )
+    } else { Write-Output 'GD11: NOT APPLICABLE; temporary root is outside macOS system aliases.' }
+  }
+
+  # GD12: arbitrary selected roots and linked untracked content are not plain data.
+  # Expected: reject a linked worktree root; incomplete linked source needs review,
+  # with original Git bytes and unrelated owned target contents preserved.
+  $linkedRoot=Join-Path $sandbox 'linked-root'
+  try {
+    New-TestDirectoryLink -Path $linkedRoot -Target $root
+    $blockedRoot=Check $linkedRoot Commit blocked
+    Assert ($blockedRoot.findings.code -contains 'boundary') 'GD12: linked root was not classified as a boundary refusal.'
+  } finally { Remove-TestLink $linkedRoot }
+  $linkedSource=New-Repo 'linked-source'
+  $outside=Join-Path $sandbox 'linked-source-target'
+  Fixture $outside 'sentinel.txt' "unrelated owned bytes`n"
+  $outsideBefore=Snapshot $outside
+  $linkedData=Join-Path $linkedSource 'linked-data'
+  try {
+    New-TestDirectoryLink -Path $linkedData -Target $outside
+    $incompleteLink=Check $linkedSource Install needs-user-decision
+    Assert ($incompleteLink.decisionRequired -contains 'source-snapshot-incomplete' -and
+      (Snapshot $outside) -ceq $outsideBefore) 'GD12: linked source was hashed as complete or its target changed.'
+  } finally { Remove-TestLink $linkedData }
+  if (-not $IsWindows) {
+    # A dangling link has no bytes to fingerprint; compare its target and the
+    # complete Git metadata separately instead of hashing an absent destination.
+    $brokenLink=Join-Path $linkedSource 'broken-data'
+    $missingTarget=Join-Path $sandbox 'missing-link-target'
+    $null=New-Item -ItemType SymbolicLink -Path $brokenLink -Target $missingTarget
+    try {
+      $gitBefore=Snapshot (Join-Path $linkedSource '.git')
+      $broken=Run-Native $pwshExe @('-NoProfile','-File',$helper,'-ProjectRoot',$linkedSource,'-Operation','Install')
+      $brokenResult=$broken.Out | ConvertFrom-Json
+      Assert ($broken.Exit -eq 2 -and $brokenResult.schemaVersion -eq 1 -and
+        $brokenResult.decisionRequired -contains 'source-snapshot-incomplete' -and
+        (Snapshot (Join-Path $linkedSource '.git')) -ceq $gitBefore -and
+        (Get-Item -LiteralPath $brokenLink -Force).Target -ceq $missingTarget -and
+        -not (Test-Path -LiteralPath $missingTarget)) 'GD12: dangling source link was followed or evidence/Git state changed.'
+      $script:checksRun++
+    } finally { Remove-TestLink $brokenLink }
+  }
+
+  # GD13: Unix worktree roots and case-distinct paths retain exact identities.
+  # Expected: preserve both filenames, and reject a Git top differing only in case.
+  $caseRoot=New-Repo 'case-root'
+  if (Test-CaseSensitiveFixture $caseRoot) {
+    Fixture $caseRoot 'Case.txt' "upper name`n"
+    Fixture $caseRoot 'case.txt' "lower name`n"
+    Git $caseRoot @('add','--all') | Out-Null
+    $caseNames=Check $caseRoot Commit ready-for-review
+    Assert ($caseNames.changes.staged -ccontains 'Case.txt' -and
+      $caseNames.changes.staged -ccontains 'case.txt') 'GD13: case-distinct changed paths were collapsed.'
+    Git $caseRoot @('commit','--quiet','-m','case baseline') | Out-Null
+    Git $caseRoot @('checkout','--quiet','-b','other') | Out-Null
+    foreach ($path in @('Case.txt','case.txt')) { Fixture $caseRoot $path "other`n" }
+    Git $caseRoot @('add','--all') | Out-Null
+    Git $caseRoot @('commit','--quiet','-m','other case edits') | Out-Null
+    Git $caseRoot @('checkout','--quiet','main') | Out-Null
+    foreach ($path in @('Case.txt','case.txt')) { Fixture $caseRoot $path "main`n" }
+    Git $caseRoot @('add','--all') | Out-Null
+    Git $caseRoot @('commit','--quiet','-m','main case edits') | Out-Null
+    $caseMerge=Run-Native $gitExe @('-c','core.hooksPath=','-C',$caseRoot,'merge','other')
+    Assert ($caseMerge.Exit -ne 0) 'GD13: case-distinct fixture did not produce conflicts.'
+    $caseConflicts=Check $caseRoot Commit blocked
+    Assert ($caseConflicts.checks.conflicts.paths.Count -eq 2 -and
+      $caseConflicts.checks.conflicts.paths -ccontains 'Case.txt' -and
+      $caseConflicts.checks.conflicts.paths -ccontains 'case.txt') 'GD13: case-distinct conflict evidence was collapsed.'
+    $caseArtifactsRoot=New-Repo 'case-artifacts'
+    $caseArtifactPaths=@('docs/governance/reviews/Case.md','docs/governance/reviews/case.md')
+    foreach ($path in $caseArtifactPaths) { Fixture $caseArtifactsRoot $path }
+    Git $caseArtifactsRoot @('add','--all') | Out-Null
+    $caseArtifacts=Check $caseArtifactsRoot Commit blocked
+    Assert ($caseArtifacts.checks.generatedArtifacts.paths.Count -eq 2 -and
+      $caseArtifacts.checks.generatedArtifacts.paths -ccontains $caseArtifactPaths[0] -and
+      $caseArtifacts.checks.generatedArtifacts.paths -ccontains $caseArtifactPaths[1]) 'GD13: case-distinct artifact evidence was collapsed.'
+    $otherCaseRoot=Join-Path $sandbox 'CASE-ROOT'
+    $null=New-Item -ItemType Directory -Path $otherCaseRoot
+    Git $caseRoot @('config','core.worktree',$otherCaseRoot) | Out-Null
+    $wrongTop=Check $caseRoot Commit blocked
+    Assert ($wrongTop.findings.code -contains 'boundary') 'GD13: case-different Git worktree root was accepted.'
+  } else { Write-Output 'GD13: NOT APPLICABLE; fixture filesystem is case-insensitive.' }
   Fixture $root 'change.txt' "different unstaged bytes`n"
   $second = Check $root Commit ready-for-review
   Assert ($first.snapshot.indexIdentity -eq $second.snapshot.indexIdentity) (

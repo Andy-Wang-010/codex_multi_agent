@@ -30,6 +30,7 @@ try {
   # Scenario: blank target. Expected: no selected instructions, all root candidates tracked, no mutation or live-loading claim.
   $before=Snapshot
   $scan=Discover
+  Assert ($scan.kitVersion -ceq (Get-Content -LiteralPath (Join-Path $repo 'VERSION') -Raw).Trim()) 'Discovery provenance differs from the installed kit release.'
   Assert ($scan.schemaVersion -eq 1 -and $scan.workingDirectory -eq '.' -and $scan.runtimeLoaded -eq 'unknown') 'Wrong default/loading contract.'
   Assert ($scan.selectedPaths.Count -eq 0 -and $scan.directories.Count -eq 1 -and $scan.totalSelectedBytes -eq 0) 'Blank target selection wrong.'
   Assert ($scan.dependencyPaths -contains 'AGENTS.override.md' -and $scan.dependencyPaths -contains 'AGENTS.md') 'Absent instruction dependencies missing.'

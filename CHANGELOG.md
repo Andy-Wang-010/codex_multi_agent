@@ -2,6 +2,21 @@
 
 English | [简体中文](CHANGELOG.zh-CN.md)
 
+The two historical `0.10.1` preview records came from separate development branches. Both retain their original release text and dates, `2026-10-04` and `2026-10-10`.
+
+## [1.0.9] - 2026-10-12
+
+### Changed
+
+- Integrate portable Windows/macOS/Linux support and guided macOS/Linux setup with the 1.0.8 unified `$team` entry, Git delivery checks, web guidance, shared test support, and existing AI development, evaluation, migration, formatting, and onboarding capabilities. Preserve both release histories, the earlier tooling cleanup, and the preview status. Extend macOS system-alias, dangling-link, and case-distinct path handling to the added runtime helpers, and use native Unix link and executable fixtures.
+- Expand the common offline runner to 27 checks: two validators and 25 suites. Derive setup's expected Skill inventory from the selected source; the current package contains 19 Skills and 15 agent profiles. Keep historical 14-check and 13-Skill platform results distinct from fresh integration verification.
+
+### Fixed
+
+- Allow an explicit `Install -Force` repair to reach the existing backup/replacement manager when a managed Skill cannot be parsed. Check client compatibility before deployment and require strict receipt and complete Skill discovery after installation; `Verify` remains read-only and does not repair failures.
+- Synchronize provenance from `documentation.ps1`, `project-rules.ps1`, `format-code.ps1`, and `ai-simulation.ps1` with `1.0.9`. Package validation now checks all four producers against `VERSION`, with regression coverage for mismatches.
+- Reject guided setup layouts whose Skills directory overlaps masked private configuration paths before starting a client probe or writing installation targets. Recommend the default `.agents` root or another non-overlapping unmasked root; retain private configuration isolation and the direct installer's existing path contract.
+
 ## [1.0.8] - 2026-10-10
 
 ### Added

@@ -22,16 +22,29 @@ $checks = @(
   @{name='validate';path='scripts/validate.ps1';arguments=@()},
   @{name='validate-docs';path='scripts/validate-docs.ps1';arguments=@('-ProjectRoot',$root)},
   @{name='agent-concurrency';path='tests/test-agent-concurrency.ps1';arguments=@()},
+  @{name='ai-capability-contracts';path='tests/test-ai-capability-contracts.ps1';arguments=@()},
+  @{name='ai-development-guidance';path='tests/test-ai-development-guidance.ps1';arguments=@()},
+  @{name='ai-evaluation';path='tests/test-ai-evaluation.ps1';arguments=@()},
+  @{name='ai-simulation';path='tests/test-ai-simulation.ps1';arguments=@()},
+  @{name='architecture-migration';path='tests/test-architecture-migration.ps1';arguments=@()},
   @{name='bilingual-docs';path='tests/test-bilingual-docs.ps1';arguments=@()},
+  @{name='code-readability';path='tests/test-code-readability.ps1';arguments=@()},
   @{name='deployment';path='tests/test-deployment.ps1';arguments=@()},
+  @{name='design-exploration';path='tests/test-design-exploration.ps1';arguments=@()},
   @{name='documentation';path='tests/test-documentation.ps1';arguments=@()},
   @{name='feedback-runtime';path='tests/test-feedback-runtime.ps1';arguments=@()},
+  @{name='formatter-tool';path='tests/test-formatter-tool.ps1';arguments=@()},
+  @{name='generated-artifacts';path='tests/test-generated-artifacts.ps1';arguments=@()},
+  @{name='git-delivery';path='tests/test-git-delivery.ps1';arguments=@()},
   @{name='install-user';path='tests/test-install-user.ps1';arguments=@()},
   @{name='openspec';path='tests/test-openspec.ps1';arguments=@()},
   @{name='project-blueprint';path='tests/test-project-blueprint.ps1';arguments=@()},
   @{name='project-rules';path='tests/test-project-rules.ps1';arguments=@()},
   @{name='stage-verification';path='tests/test-stage-verification.ps1';arguments=@()},
+  @{name='team-entry';path='tests/test-team-entry.ps1';arguments=@()},
+  @{name='test-support';path='tests/test-test-support.ps1';arguments=@()},
   @{name='validate-package';path='tests/test-validate.ps1';arguments=@()},
+  @{name='web-engineering';path='tests/test-web-engineering.ps1';arguments=@()},
   @{name='portability';path='tests/test-portability.ps1';arguments=@()}
 )
 if ($Suite.Count -gt 0) {
@@ -45,10 +58,14 @@ if ($Suite.Count -gt 0) {
 if (-not $shell -or -not (Test-Path -LiteralPath $shell -PathType Leaf)) { throw 'TEST_SETUP: Cannot locate the running PowerShell executable.' }
 Write-Host ("Platform: {0}; OS architecture: {1}; process architecture: {2}" -f [Runtime.InteropServices.RuntimeInformation]::OSDescription,[Runtime.InteropServices.RuntimeInformation]::OSArchitecture,[Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)
 Write-Host ("Runtime: PowerShell {0}; {1}" -f $PSVersionTable.PSVersion,[Runtime.InteropServices.RuntimeInformation]::FrameworkDescription)
-foreach ($prerequisite in @(@{name='git';suite='deployment';argument='--version'},@{name='node';suite='openspec';argument='--version'})) {
-  if ($prerequisite.suite -notin $checks.name) { continue }
+foreach ($prerequisite in @(
+  @{name='git';suites=@('deployment','ai-development-guidance','ai-simulation','generated-artifacts','git-delivery','formatter-tool','documentation','openspec','portability');argument='--version'},
+  @{name='node';suites=@('openspec','formatter-tool');argument='--version'}
+)) {
+  $dependentChecks=@($checks.name | Where-Object { $_ -in $prerequisite.suites })
+  if ($dependentChecks.Count -eq 0) { continue }
   $command = Get-Command $prerequisite.name -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
-  if (-not $command) { throw "TEST_SETUP: $($prerequisite.name) is required for $($prerequisite.suite); provision it separately. This runner never installs dependencies." }
+  if (-not $command) { throw "TEST_SETUP: $($prerequisite.name) is required for $($dependentChecks -join ', '); provision it separately. This runner never installs dependencies." }
   $version = & $command.Source $prerequisite.argument
   if ($LASTEXITCODE -ne 0) { throw "TEST_SETUP: $($prerequisite.name) version probe failed with exit $LASTEXITCODE." }
   Write-Host ("Dependency: {0}" -f ($version -join ' '))
