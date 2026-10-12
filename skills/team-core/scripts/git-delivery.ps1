@@ -94,6 +94,9 @@ function Invoke-DeliveryGit([string[]]$Arguments, [int[]]$Allowed = @(0)) {
   $configuration = @(
     '--no-optional-locks', '--no-pager', '-c', 'core.fsmonitor=false',
     '-c', 'core.untrackedCache=false', '-c', 'core.quotePath=false',
+    # Git diff can refresh cached stat entries even when optional locks are off.
+    # Override repository configuration per process without changing its bytes.
+    '-c', 'diff.autoRefreshIndex=false',
     '-c', 'core.hooksPath=/dev/null', '-c', 'diff.external=',
     '-c', 'core.excludesFile=/dev/null', '-c', 'submodule.recurse=false',
     '-c', "safe.directory=$($root.Replace('\','/'))"

@@ -148,6 +148,26 @@ try {
 
   if (-not $PackageOnly -and -not $ReleaseOnly -and -not $GitSafetyOnly -and
     -not $InstallCopyOnly) {
+  # GD14: diff can refresh stat-only index entries despite optional locks being off.
+  # Expected: unchanged file bytes with a stale cached timestamp never rewrite the
+  # index, even when the repository explicitly enables diff.autoRefreshIndex.
+  $statRoot = New-Repo 'stat-only-refresh'
+  Git $statRoot @('config', 'diff.autoRefreshIndex', 'true') | Out-Null
+  $statFile = Join-Path $statRoot 'baseline.txt'
+  foreach ($case in @(
+    @{ status = 'needs-user-decision'; options = @() },
+    @{ status = 'blocked'; options = @('-BaseRef', 'refs/heads/no-such-base') },
+    @{ status = 'ready-for-review'; options = @('-BaseRef', 'HEAD') }
+  )) {
+    $beforeTouch = Snapshot $statRoot
+    $mtime = [IO.File]::GetLastWriteTimeUtc($statFile)
+    [IO.File]::SetLastWriteTimeUtc($statFile, $mtime.AddSeconds(20))
+    Assert ([IO.File]::GetLastWriteTimeUtc($statFile) -gt $mtime) 'GD14: fixture timestamp did not advance.'
+    Assert ((Snapshot $statRoot) -ceq $beforeTouch) 'GD14: timestamp preparation changed fixture bytes.'
+    # No diff/status command may refresh the stale entry before the public helper.
+    Check $statRoot Push $case.status $case.options | Out-Null
+  }
+
   # GD01: clean staged content coexists with unstaged trailing whitespace.
   # Expected: Commit inspects staged bytes, pins HEAD, and preserves all repository bytes.
   $root = New-Repo 'index-scope'

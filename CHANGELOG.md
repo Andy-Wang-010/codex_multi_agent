@@ -17,6 +17,7 @@ The two historical `0.10.1` preview records came from separate development branc
 - Synchronize provenance from `documentation.ps1`, `project-rules.ps1`, `format-code.ps1`, and `ai-simulation.ps1` with `1.0.9`. Package validation now checks all four producers against `VERSION`, with regression coverage for mismatches.
 - Reject guided setup layouts whose Skills directory overlaps masked private configuration paths before starting a client probe or writing installation targets. Recommend the default `.agents` root or another non-overlapping unmasked root; retain private configuration isolation and the direct installer's existing path contract.
 - Drain formatter output without per-read pauses, using bounded waits that wake when I/O completes. Preserve fair stdout/stderr handling, Unicode validation, byte limits, and per-process deadlines.
+- Prevent read-only Git delivery diffs from refreshing `.git/index` when timestamps change but file content does not. Apply `diff.autoRefreshIndex=false` only to collector commands, leaving user and repository Git configuration unchanged.
 
 ## [1.0.8] - 2026-10-10
 
