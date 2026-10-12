@@ -1,7 +1,7 @@
 # Exercise the installed formatter adapter in isolated project fixtures.
 # Controlled tools test transport and safety, not real formatter quality or Agent selection.
 [CmdletBinding()]
-param([switch]$SourceOnly, [ValidateSet('EditorConfig', 'GitIgnore')][string]$PolicyCase)
+param([switch]$SourceOnly, [ValidateSet('EditorConfig', 'GitIgnore')][string]$PolicyCase, [switch]$TransportOnly)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $root = Split-Path -Parent $PSScriptRoot
@@ -52,7 +52,7 @@ function Invoke-Adapter([hashtable]$Options) {
   }) -join ','
   $modePath = Join-Path $project 'tool-mode.txt'
   $mode = if (Test-Path -LiteralPath $modePath -PathType Leaf) { [IO.File]::ReadAllText($modePath).Trim() } else { 'normal' }
-  if ($mode -notin @('normal','timeout','oversize','unicode-oversize','fail','unicode-boundary')) { $mode = '<other-fixture-mode>' }
+  if ($mode -notin @('normal','timeout','oversize','unicode-oversize','combined-oversize','fail','unicode-boundary')) { $mode = '<other-fixture-mode>' }
   $scenario = "adapter#$script:adapterInvocation action=$action files=$displayFiles mode=$mode"
   $trace = $env:CODEX_FORMATTER_TRACE -ceq '1'
   if ($trace) { Write-Host "FT $scenario begin; child budget=${childTimeout}s" }
@@ -149,6 +149,47 @@ function Test-PolicyBoundary([string]$Kind) {
   $finalCalls = if (Test-Path -LiteralPath $log) { (Get-Content -LiteralPath $log).Count } else { 0 }
   Assert-True ($finalCalls -eq $initialCalls) "Policy $Kind executed formatter."
 }
+function Test-TransportLimits {
+  # FT-05 actual timeout and bounded output: trusted controlled process stalls or floods.
+  # Expected: Apply errors with unchanged original, no unbounded wait/output.
+  # The 8s ASCII burst deadline detects a reader throttled by sleeps per 4KiB chunk.
+  Write-Fixture 'src/limits.js' 'UNFORMATTED'
+  $limits = Join-Path $project 'src/limits.js'
+  foreach ($mode in @('timeout', 'oversize', 'unicode-oversize', 'combined-oversize', 'fail')) {
+    Write-Fixture 'tool-mode.txt' $mode
+    $hash = Fingerprint $limits
+    $limitTimeout = if ($mode -eq 'timeout') { 1 } elseif ($mode -in @('oversize','combined-oversize')) { 8 } else { 30 }
+    $limited = Invoke-Adapter @{
+      Action = 'Apply'; TrustTooling = $true; AllowWrite = $true
+      Files = @('src/limits.js'); TimeoutSeconds = $limitTimeout
+    }
+    Assert-True ($limited.Code -eq 2) "Tool $mode did not fail closed."
+    if ($mode -eq 'timeout') {
+      Assert-True ($limited.Payload.results[0].reason -eq 'tool-timeout') "Tool timeout failed for unrelated reason: $($limited.Raw)"
+    }
+    if ($mode -in @('oversize', 'unicode-oversize', 'combined-oversize')) {
+      Assert-True (
+        $limited.Payload.results[0].reason -eq 'tool-output-limit'
+      ) "Tool $mode failed for unrelated reason: $($limited.Raw)"
+    }
+    Assert-NoChange $limits $hash "FT-05 $mode"
+  }
+  # FT-06 split Unicode transport: supplementary characters split across native pipe chunks.
+  # Expected: below-budget UTF-8 output survives exactly, without surrogate-state rejection.
+  Write-Fixture 'tool-mode.txt' 'unicode-boundary'
+  $unicode = Invoke-Adapter @{
+    Action = 'Apply'; TrustTooling = $true; AllowWrite = $true; Files = @('src/limits.js')
+  }
+  Assert-True ($unicode.Code -eq 0) "Split Unicode candidate failed: $($unicode.Raw)"
+  $unicodeExpected = $utf8.GetBytes(('A' + ('😀' * 6000)))
+  Assert-True (
+    [Convert]::ToBase64String([IO.File]::ReadAllBytes($limits)) -ceq
+    [Convert]::ToBase64String($unicodeExpected)
+  ) 'Supplementary character bytes changed.'
+  Remove-Item -LiteralPath (Join-Path $project 'tool-mode.txt')
+
+}
+
 try {
   [IO.Directory]::CreateDirectory($project) | Out-Null
   $originalSource = "// Meaningful literal and explanation remain.`nconst message = 'UNFORMATTED';`n"
@@ -166,6 +207,11 @@ try {
   if ($PolicyCase) {
     Test-PolicyBoundary $PolicyCase
     Write-Output "Policy $PolicyCase checks passed; native formatter acceptance not observed."
+    return
+  }
+  if ($TransportOnly) {
+    Test-TransportLimits
+    Write-Output 'FT-05/06 focused transport limits and Unicode byte fidelity passed.'
     return
   }
   Test-PolicyBoundary 'EditorConfig'
@@ -426,42 +472,7 @@ try {
     $missing.Code -eq 2 -and $missing.Payload.results[0].status -eq 'blocked'
   ) 'Missing explicit tool did not block.'
 
-  # FT-05 actual timeout and bounded output: trusted controlled process stalls or floods.
-  # Expected: Apply errors with unchanged original, no unbounded wait/output.
-  Write-Fixture 'src/limits.js' 'UNFORMATTED'
-  $limits = Join-Path $project 'src/limits.js'
-  foreach ($mode in @('timeout', 'oversize', 'unicode-oversize', 'fail')) {
-    Write-Fixture 'tool-mode.txt' $mode
-    $hash = Fingerprint $limits
-    $limitTimeout = if ($mode -eq 'timeout') { 1 } else { 30 }
-    $limited = Invoke-Adapter @{
-      Action = 'Apply'; TrustTooling = $true; AllowWrite = $true
-      Files = @('src/limits.js'); TimeoutSeconds = $limitTimeout
-    }
-    Assert-True ($limited.Code -eq 2) "Tool $mode did not fail closed."
-    if ($mode -eq 'timeout') {
-      Assert-True ($limited.Payload.results[0].reason -eq 'tool-timeout') "Tool timeout failed for unrelated reason: $($limited.Raw)"
-    }
-    if ($mode -in @('oversize', 'unicode-oversize')) {
-      Assert-True (
-        $limited.Payload.results[0].reason -eq 'tool-output-limit'
-      ) "Tool $mode failed for unrelated reason: $($limited.Raw)"
-    }
-    Assert-NoChange $limits $hash "FT-05 $mode"
-  }
-  # FT-06 split Unicode transport: supplementary characters split across native pipe chunks.
-  # Expected: below-budget UTF-8 output survives exactly, without surrogate-state rejection.
-  Write-Fixture 'tool-mode.txt' 'unicode-boundary'
-  $unicode = Invoke-Adapter @{
-    Action = 'Apply'; TrustTooling = $true; AllowWrite = $true; Files = @('src/limits.js')
-  }
-  Assert-True ($unicode.Code -eq 0) "Split Unicode candidate failed: $($unicode.Raw)"
-  $unicodeExpected = $utf8.GetBytes(('A' + ('😀' * 6000)))
-  Assert-True (
-    [Convert]::ToBase64String([IO.File]::ReadAllBytes($limits)) -ceq
-    [Convert]::ToBase64String($unicodeExpected)
-  ) 'Supplementary character bytes changed.'
-  Remove-Item -LiteralPath (Join-Path $project 'tool-mode.txt')
+  Test-TransportLimits
 
   # FT-04 PowerShell fixed-worker transport: trusted synthetic installed PSD1 module.
   # Expected: Check detects change without writes; Apply commits only the selected PS file.

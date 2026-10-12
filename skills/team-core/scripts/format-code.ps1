@@ -362,13 +362,16 @@ function Invoke-Tool([hashtable]$Context, [string[]]$Arguments, [string]$InputTe
     $closed = $false
     while (-not $process.HasExited -or $tasks[0] -or $tasks[1]) {
       if ($watch.Elapsed.TotalSeconds -gt $TimeoutSeconds) { throw 'tool-timeout' }
+      $progress = $false
       if (-not $closed -and $write.IsCompleted) {
         $write.GetAwaiter().GetResult()
         $process.StandardInput.Close()
         $closed = $true
+        $progress = $true
       }
       for ($index = 0; $index -lt 2; $index++) {
         if ($tasks[$index] -and $tasks[$index].IsCompleted) {
+          $progress = $true
           $count = $tasks[$index].GetAwaiter().GetResult()
           $charactersUsed = 0
           $bytesUsed = 0
@@ -390,7 +393,9 @@ function Invoke-Tool([hashtable]$Context, [string[]]$Arguments, [string]$InputTe
           $tasks[$index] = $readers[$index].ReadAsync($buffers[$index], 0, 4096)
         }
       }
-      [Threading.Thread]::Sleep(10)
+      # Ready pipe data must not be throttled by a pause per 4KiB chunk. Keep
+      # one read per stream each cycle for fairness; pause only while awaiting I/O.
+      if (-not $progress) { [Threading.Thread]::Sleep(10) }
     }
     $process.WaitForExit()
     return @{ code = $process.ExitCode; output = $texts[0].ToString() }

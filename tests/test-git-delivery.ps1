@@ -75,6 +75,39 @@ function Snapshot([string]$Root) {
   return Get-TestFingerprint -Root $Root
 }
 
+# Diagnose byte-preservation failures using bounded relative paths only. The
+# fingerprints already contain hashes; never print hashes, contents or config values.
+function Describe-SnapshotDifference([string]$Before, [string]$After) {
+  $maps = @()
+  foreach ($snapshot in @($Before, $After)) {
+    $map = [Collections.Generic.Dictionary[string,string]]::new([StringComparer]::Ordinal)
+    # A path may itself contain tabs/newlines; only the trailing SHA256 ends a row.
+    foreach ($row in [regex]::Matches($snapshot, '(?s)(.*?)\t([A-F0-9]{64})(?:\n|$)')) {
+      $map.Add($row.Groups[1].Value, $row.Groups[2].Value)
+    }
+    $maps += ,$map
+  }
+  $added = [Collections.Generic.List[string]]::new()
+  $removed = [Collections.Generic.List[string]]::new()
+  $changed = [Collections.Generic.List[string]]::new()
+  foreach ($path in $maps[0].Keys) {
+    if (-not $maps[1].ContainsKey($path)) { $removed.Add($path) }
+    elseif ($maps[0][$path] -cne $maps[1][$path]) { $changed.Add($path) }
+  }
+  foreach ($path in $maps[1].Keys) {
+    if (-not $maps[0].ContainsKey($path)) { $added.Add($path) }
+  }
+  foreach ($paths in @($added, $removed, $changed)) { $paths.Sort([StringComparer]::Ordinal) }
+  return ([ordered]@{
+    beforeFiles = $maps[0].Count; afterFiles = $maps[1].Count
+    added = @($added | Select-Object -First 30)
+    removed = @($removed | Select-Object -First 30)
+    changed = @($changed | Select-Object -First 30)
+    omittedPaths = [Math]::Max(0,$added.Count-30) + [Math]::Max(0,$removed.Count-30) +
+      [Math]::Max(0,$changed.Count-30)
+  } | ConvertTo-Json -Depth 4 -Compress)
+}
+
 # Check public JSON/exit semantics and byte preservation for every invocation,
 # including blocked and needs-user-decision results. Never execute suggested actions.
 function Check(
@@ -88,7 +121,10 @@ function Check(
     '-NoProfile', '-File', $helper, '-ProjectRoot', $Root, '-Operation', $Operation
   ) + $Options)
   $after = Snapshot $Root
-  Assert ($before -ceq $after) "$Operation mutated fixture files/index/refs."
+  if ($before -cne $after) {
+    $delta = Describe-SnapshotDifference $before $after
+    throw "$Operation mutated fixture files/index/refs; fixture=$([IO.Path]::GetFileName($Root)); invocation=$($script:checksRun+1). $delta"
+  }
   try { $json = $result.Out | ConvertFrom-Json -ErrorAction Stop }
   catch { throw "Invalid public JSON: $($result.Out) $($result.Error)" }
   $expectedExit = @{ 'ready-for-review' = 0; blocked = 1; 'needs-user-decision' = 2 }
