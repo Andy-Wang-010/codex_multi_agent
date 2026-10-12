@@ -32,7 +32,8 @@ function Assert([bool]$Condition, [string]$Message) {
 # The caller receives stdout/stderr/exit separately; only fixture Git commands mutate.
 function Run-Native([string]$Exe, [string[]]$Arguments) {
   return Invoke-TestProcess -FilePath $Exe -ArgumentList $Arguments -Environment @{
-    GIT_CONFIG_GLOBAL = if ($IsWindows) { 'NUL' } else { '/dev/null' }
+    # Git for Windows recognizes /dev/null; Win32's NUL is not a config path.
+    GIT_CONFIG_GLOBAL = '/dev/null'
     GIT_CONFIG_NOSYSTEM = '1'
     GIT_OPTIONAL_LOCKS = '0'
   }

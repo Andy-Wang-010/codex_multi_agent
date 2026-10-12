@@ -17,6 +17,7 @@ $fixture = Join-Path $tempParent ('codex-formatter-test-' + [guid]::NewGuid().To
 $project = Join-Path $fixture 'project with spaces'
 $outside = Join-Path $fixture 'outside.js'
 $utf8 = [Text.UTF8Encoding]::new($false, $true)
+$script:adapterInvocation = 0
 
 function Assert-True([bool]$Value, [string]$Message) {
   # Fail at the behavioral boundary, retaining a scenario-specific diagnostic.
@@ -36,6 +37,25 @@ function Invoke-Adapter([hashtable]$Options) {
   # Invoke the real CLI in a fresh pwsh process; JSON/base64 preserves literal array args.
   $parameters = @{ ProjectRoot = $project; Files = @('src/file with spaces.js') }
   foreach ($key in $Options.Keys) { $parameters[$key] = $Options[$key] }
+  $script:adapterInvocation++
+  $action = if ($parameters.ContainsKey('Action')) { $parameters.Action } else { 'Plan' }
+  $toolTimeout = if ($parameters.ContainsKey('TimeoutSeconds')) { [int]$parameters.TimeoutSeconds } else { 30 }
+  # A Prettier request can run version, policy and candidate processes per file.
+  # Preserve those production deadlines; give this outer fixture host their total
+  # bounded budget plus startup/metadata/JSON allowance instead of racing one call.
+  $childTimeout = 30
+  if ($action -ne 'Plan' -and $parameters.TrustTooling) {
+    $childTimeout += 3 * @($parameters.Files).Count * $toolTimeout
+  }
+  $displayFiles = @($parameters.Files | ForEach-Object {
+    if ([IO.Path]::IsPathRooted($_)) { '<absolute-path>' } else { $_ }
+  }) -join ','
+  $modePath = Join-Path $project 'tool-mode.txt'
+  $mode = if (Test-Path -LiteralPath $modePath -PathType Leaf) { [IO.File]::ReadAllText($modePath).Trim() } else { 'normal' }
+  if ($mode -notin @('normal','timeout','oversize','unicode-oversize','fail','unicode-boundary')) { $mode = '<other-fixture-mode>' }
+  $scenario = "adapter#$script:adapterInvocation action=$action files=$displayFiles mode=$mode"
+  $trace = $env:CODEX_FORMATTER_TRACE -ceq '1'
+  if ($trace) { Write-Host "FT $scenario begin; child budget=${childTimeout}s" }
   $parameterJson = $parameters | ConvertTo-Json -Depth 8
   $encodedParameters = [Convert]::ToBase64String($utf8.GetBytes($parameterJson))
   $encodedHelper = [Convert]::ToBase64String($utf8.GetBytes($helper))
@@ -47,7 +67,10 @@ function Invoke-Adapter([hashtable]$Options) {
 exit `$LASTEXITCODE
 "@
   $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
-  $child = Invoke-TestPowerShell @('-EncodedCommand', $encodedCommand)
+  $watch = [Diagnostics.Stopwatch]::StartNew()
+  try { $child = Invoke-TestPowerShell @('-EncodedCommand', $encodedCommand) -TimeoutSeconds $childTimeout }
+  catch { throw "FT $scenario failed after $([Math]::Round($watch.Elapsed.TotalSeconds,2))s: $($_.Exception.Message)" }
+  if ($trace) { Write-Host "FT $scenario finished in $([Math]::Round($watch.Elapsed.TotalSeconds,2))s; exit=$($child.ExitCode)" }
   $code = $child.ExitCode
   $raw = $child.Output
   if ($child.Errors) { throw "Adapter child stderr (exit $code): $($child.Errors)" }
@@ -416,6 +439,9 @@ try {
       Files = @('src/limits.js'); TimeoutSeconds = $limitTimeout
     }
     Assert-True ($limited.Code -eq 2) "Tool $mode did not fail closed."
+    if ($mode -eq 'timeout') {
+      Assert-True ($limited.Payload.results[0].reason -eq 'tool-timeout') "Tool timeout failed for unrelated reason: $($limited.Raw)"
+    }
     if ($mode -in @('oversize', 'unicode-oversize')) {
       Assert-True (
         $limited.Payload.results[0].reason -eq 'tool-output-limit'
