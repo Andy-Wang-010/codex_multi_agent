@@ -16,7 +16,7 @@ The two historical `0.10.1` preview records came from separate development branc
 - Allow an explicit `Install -Force` repair to reach the existing backup/replacement manager when a managed Skill cannot be parsed. Check client compatibility before deployment and require strict receipt and complete Skill discovery after installation; `Verify` remains read-only and does not repair failures.
 - Synchronize provenance from `documentation.ps1`, `project-rules.ps1`, `format-code.ps1`, and `ai-simulation.ps1` with `1.0.9`. Package validation now checks all four producers against `VERSION`, with regression coverage for mismatches.
 - Reject guided setup layouts whose Skills directory overlaps masked private configuration paths before starting a client probe or writing installation targets. Recommend the default `.agents` root or another non-overlapping unmasked root; retain private configuration isolation and the direct installer's existing path contract.
-- Remove unnecessary delays while draining formatter output: sleep only when neither output stream makes progress. Preserve fair stdout/stderr handling, Unicode validation, byte limits, and per-process deadlines, so large output reaches its limit without an added delay after each read.
+- Drain formatter output without per-read pauses, using bounded waits that wake when I/O completes. Preserve fair stdout/stderr handling, Unicode validation, byte limits, and per-process deadlines.
 
 ## [1.0.8] - 2026-10-10
 

@@ -360,6 +360,7 @@ function Invoke-Tool([hashtable]$Context, [string[]]$Arguments, [string]$InputTe
     $encodedChunk = [byte[]]::new($utf8.GetMaxByteCount(4096))
     $capturedBytes = 0
     $closed = $false
+    $waiters = [Collections.Generic.List[Threading.Tasks.Task]]::new()
     while (-not $process.HasExited -or $tasks[0] -or $tasks[1]) {
       if ($watch.Elapsed.TotalSeconds -gt $TimeoutSeconds) { throw 'tool-timeout' }
       $progress = $false
@@ -393,9 +394,21 @@ function Invoke-Tool([hashtable]$Context, [string[]]$Arguments, [string]$InputTe
           $tasks[$index] = $readers[$index].ReadAsync($buffers[$index], 0, 4096)
         }
       }
-      # Ready pipe data must not be throttled by a pause per 4KiB chunk. Keep
-      # one read per stream each cycle for fairness; pause only while awaiting I/O.
-      if (-not $progress) { [Threading.Thread]::Sleep(10) }
+      # A pending read may complete just after inspection, especially on Windows.
+      # Wait for completion instead of imposing a polling delay per pipe chunk.
+      # One read per stream each cycle keeps fairness and the deadline above.
+      if (-not $progress) {
+        $waiters.Clear()
+        foreach ($task in $tasks) { if ($null -ne $task) { $waiters.Add($task) } }
+        if (-not $closed) { $waiters.Add($write) }
+        $remaining = $TimeoutSeconds * 1000 - $watch.ElapsedMilliseconds
+        $waitMilliseconds = [int][Math]::Max(1, [Math]::Min(10, $remaining))
+        if ($waiters.Count) {
+          [Threading.Tasks.Task]::WaitAny($waiters.ToArray(), $waitMilliseconds) | Out-Null
+        } elseif (-not $process.HasExited) {
+          $process.WaitForExit($waitMilliseconds) | Out-Null
+        }
+      }
     }
     $process.WaitForExit()
     return @{ code = $process.ExitCode; output = $texts[0].ToString() }

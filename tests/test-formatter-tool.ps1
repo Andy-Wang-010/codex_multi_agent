@@ -1,7 +1,12 @@
 # Exercise the installed formatter adapter in isolated project fixtures.
 # Controlled tools test transport and safety, not real formatter quality or Agent selection.
 [CmdletBinding()]
-param([switch]$SourceOnly, [ValidateSet('EditorConfig', 'GitIgnore')][string]$PolicyCase, [switch]$TransportOnly)
+param(
+  [switch]$SourceOnly,
+  [ValidateSet('EditorConfig', 'GitIgnore')][string]$PolicyCase,
+  [switch]$TransportOnly,
+  [ValidateRange(1, 120)][int]$BurstTimeoutSeconds = 30
+)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'helpers/platform.ps1')
 $root = Split-Path -Parent $PSScriptRoot
@@ -152,13 +157,14 @@ function Test-PolicyBoundary([string]$Kind) {
 function Test-TransportLimits {
   # FT-05 actual timeout and bounded output: trusted controlled process stalls or floods.
   # Expected: Apply errors with unchanged original, no unbounded wait/output.
-  # The 8s ASCII burst deadline detects a reader throttled by sleeps per 4KiB chunk.
+  # Normal safety checks use the production default deadline. A caller can select
+  # a shorter burst deadline for focused throughput diagnostics, not a host SLA.
   Write-Fixture 'src/limits.js' 'UNFORMATTED'
   $limits = Join-Path $project 'src/limits.js'
   foreach ($mode in @('timeout', 'oversize', 'unicode-oversize', 'combined-oversize', 'fail')) {
     Write-Fixture 'tool-mode.txt' $mode
     $hash = Fingerprint $limits
-    $limitTimeout = if ($mode -eq 'timeout') { 1 } elseif ($mode -in @('oversize','combined-oversize')) { 8 } else { 30 }
+    $limitTimeout = if ($mode -eq 'timeout') { 1 } elseif ($mode -in @('oversize','combined-oversize')) { $BurstTimeoutSeconds } else { 30 }
     $limited = Invoke-Adapter @{
       Action = 'Apply'; TrustTooling = $true; AllowWrite = $true
       Files = @('src/limits.js'); TimeoutSeconds = $limitTimeout
