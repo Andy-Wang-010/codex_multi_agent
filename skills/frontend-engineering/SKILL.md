@@ -7,6 +7,8 @@ description: Build or review frontend code using an evidence-backed workflow for
 
 Use this Skill for material client-side work. Read the shared [execution contract](../team-core/references/execution-contract.md) and [execution templates](../team-core/references/execution-templates.md) in full when establishing the Work contract so frontend quality is defined by observable behavior, not only implementation detail.
 
+When actual client state, asynchronous data, persistence, interaction, accessibility, or performance risk warrants extra domain checks, select the relevant parts of the shared [risk-proportional web engineering guide](../team-core/references/web-engineering.md), not every linked reference. Use [state and data boundaries](references/state-data.md) and [usability/performance](references/usability-performance.md) only for affected behavior; these guides do not mandate a library or a blanket audit.
+
 
 ## When to activate
 
@@ -16,7 +18,7 @@ Do not use to introduce a state library, UI library, analytics, client-side secr
 
 ## Discover the interaction surface
 
-1. Identify the framework, design system, component conventions, state patterns, and existing test or browser-verification tools.
+1. Identify the framework, design system, component conventions, state patterns, and existing test or browser-verification tools. Prefer suitable existing components and dependencies; when evaluating or adding third-party code/assets, follow [reuse and third-party guidance](../team-core/references/reuse-and-third-party.md).
 2. Trace the user-observable path: entry point, data source, loading, empty, error, success, mutation feedback, and recovery behavior.
 3. Inspect accessibility and responsive conventions already used nearby: semantic controls, keyboard behavior, focus management, accessible names, and supported viewport expectations.
 

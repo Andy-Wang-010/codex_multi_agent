@@ -10,10 +10,14 @@ Use Codex on the computer where you want the Kit installed. Follow the [installa
 
 Use a disposable local project for this exercise. Installation is a separate explicit request; do not run the user installer merely to read this guide. This is a reproducible exercise, not a transcript or a claim that a live multi-agent run has already passed.
 
+Team may be task-matched automatically for engineering work, but host selection is best effort. This exercise invokes `$team` explicitly so the entry remains clear when automatic matching does not occur.
+
+An understood low-risk exercise may use the lightweight Lead-owned path. In that case the final report states that no child agents were used and labels testing/review as self-checks; it must not invent independent evidence. To exercise the multi-agent path specifically, add an explicit request for a named implementer, Tester and independent Reviewer. See the [execution contract](../skills/team-core/references/execution-contract.md).
+
 ### Copy this task into Codex
 
 ```text
-$team-dev Build a tiny Python temperature converter in this disposable project. Use only the Python standard library. Provide celsius_to_fahrenheit(value) and fahrenheit_to_celsius(value), with unittest coverage for freezing, boiling, negative values, and round-trip conversion using a float tolerance. Do not add a UI, network access, or dependencies. State the plan and actual role assignments, implement the functions, run the tests, review the result, and report changed files, executed checks, actual child-agent identities, and any unverified claims. Follow applicable project and Kit instructions; do not claim success if a required role or runtime capability is unavailable.
+$team Build a tiny Python temperature converter in this disposable project. Use only the Python standard library. Provide celsius_to_fahrenheit(value) and fahrenheit_to_celsius(value), with unittest coverage for freezing, boiling, negative values, and round-trip conversion using a float tolerance. Do not add a UI, network access, or dependencies. State the plan and actual role assignments, implement the functions, run the tests, review the result, and report changed files, executed checks, actual child-agent identities, and any unverified claims. Follow applicable project and Kit instructions; do not claim success if a required role or runtime capability is unavailable.
 ```
 
 ### Check the result
@@ -42,9 +46,13 @@ A [maintainer-run temperature example](examples/temperature/README.md) includes 
 
 请在一个可丢弃的本地项目中练习。安装需要单独明确提出；阅读本指南不需要运行用户级安装器。以下是可复现的练习，不是运行实录，也不表示真实多智能体流程已经通过。
 
+工程任务可能被自动匹配到 Team，但是否选中取决于宿主。本练习显式调用 `$team`，即使没有自动匹配也能按示例操作。
+
+边界清楚且低风险的练习可以采用 Lead 单独完成的轻量路径。此时最终汇报应明确没有调用子智能体，将测试与复查标为自检，不能编造独立证据。若要专门练习多智能体流程，请额外明确要求具名实现者、Tester 和独立 Reviewer。详见[执行约定](../skills/team-core/references/execution-contract.md)。
+
 ### 复制上面的任务到 Codex
 
-英文任务要求：仅用 Python 标准库实现摄氏与华氏温度互转，提供两个函数，使用 unittest 检查冰点、沸点、负数和带浮点容差的往返转换。不要添加界面、联网功能或依赖。要求 Codex 说明计划和实际分工，完成实现、测试与审查，并汇报修改文件、已执行检查、实际子智能体身份和尚未验证的事项。缺少必需角色或运行能力时不能声称成功。
+英文任务以 `$team` 显式启动，要求仅用 Python 标准库实现摄氏与华氏温度互转，提供两个函数，使用 unittest 检查冰点、沸点、负数和带浮点容差的往返转换。不要添加界面、联网功能或依赖。要求 Codex 说明计划和实际分工，完成实现、测试与审查，并汇报修改文件、已执行检查、实际子智能体身份和尚未验证的事项。缺少必需角色或运行能力时不能声称成功。
 
 ### 检查结果
 

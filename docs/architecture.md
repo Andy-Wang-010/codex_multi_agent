@@ -4,13 +4,23 @@ The system has three layers:
 
 1. **Codex native executor** — creates, observes, and joins subagent threads.
 2. **Custom agents** — define bounded roles, model choices, and write permissions.
-3. **Skills** — provide explicit team workflows and routing rules. The internal `team-core` Skill ships shared execution, routing, ownership, and handoff references with the workflow Skills.
+3. **Skills** — provide the recommended `$team` composition entry, task-matched to requests for engineering work or available by explicit invocation, alongside direct workflow entries. The internal `team-core` Skill ships shared execution, routing, ownership, and handoff references with the workflow Skills.
 
 The main Codex thread is the Lead. It reads project instructions, decides whether parallel work materially helps, gives each child a bounded task, and consolidates outcomes. The Lead is not a separate custom agent. Team workflows use the shared execution contract: Context, Discover, Contract, Execute, Verify, and Handoff.
 
 ## Default execution
 
-`$team-dev` starts with a brief task/risk declaration and scope analysis. Code-changing work, including small bounded tasks, defaults to one named domain implementer plus the Tester role selected for the behavior: `team-tester` generally, or `team-ai-tester` when application AI behavior evaluation is the primary test need. The selected Tester plans concise packet coverage before implementation and verifies afterward, with test-file ownership separate from production files; mixed work follows shared routing for one canonical packet owner and distinct software assertions. Every material implementation also receives independent `team-reviewer` review, with relevant specialists added when risk or boundaries warrant them. Medium and large tasks normally add `team-explorer` plus `team-architect` or a targeted specialist when discovery or cross-module design requires it. Small tasks keep the same applicable documentation, stage-packet, TDD, coverage, comments, domain and verification obligations in a shorter record. Pure consultation and read-only investigation do not inherit the implementation-agent minimum; debug repairs enter the implementation path. Only an explicit request for the Lead personally to implement, or approval of a specific Lead-only exception, changes the default ownership. Such an exception does not waive stage evidence or material-change independent review; unresolved conflicts are returned for direction. At close, the Lead reconciles intended roles/checks with actual invocation and verification evidence.
+`$team-dev` starts with a brief task/risk declaration and scope analysis. The shared [execution contract](../skills/team-core/references/execution-contract.md) selects lightweight Lead-owned execution for understood, bounded, low-risk maintenance and isolated ordinary code fixes; using Team does not itself require children. This path needs no extra Lead-only approval or automatic full inventory, schema packet or feedback record. It retains relevant instructions, domain guidance, practical regression/TDD, comments, real-boundary verification and any existing project/stage/manual obligations. Results are self-checks, not independent evidence. Eligibility is not based on line/file count or unavailable roles, and newly discovered material risk returns dependent work to Contract.
+
+Other implementation work retains one exact named domain writer plus the appropriate Tester (`team-tester` generally, `team-ai-tester` for assigned application AI evaluation), with separate production/test ownership and one canonical packet owner. Material changes retain independent `team-reviewer` review. Explorer, Architect and other specialists are added only for a concrete need. An approved Lead-only exception outside the lightweight path does not waive material independent review or evidence requirements. At close, reconcile intended execution mode, roles and checks with actual evidence and disclose pending acceptance.
+
+## Unified Team entry
+
+`$team` may be selected automatically for a user request to carry out engineering work or invoked explicitly. This applies to the current task and directly relevant follow-ups only, not as a durable mode for unrelated conversations. Task matching is best effort and host/model-dependent, not proof of active-session loading; explicit `$team` remains available. The Lead selects or composes existing workflow Skills from intent, authorization, evidence, and risk; ordinary factual questions can be answered directly, while explicit workflow choices and opt-out take precedence. Selection does not require a second command or waive the selected workflow's permissions, roles, evidence, budgets, or approval gates. Direct entries remain supported. The Lead does not create a router agent or runtime, and asks only for a materially missing choice or authority. [`workflow-routing.md`](../skills/team-core/references/workflow-routing.md) is the sole composition contract; domain rules stay in their existing Skills and shared references.
+
+| Module | Owner files and responsibility | Dependencies |
+| --- | --- | --- |
+| Unified Team entry (TEAM-ENTRY) | `skills/team/SKILL.md` provides the task-matched or explicit Lead entry; `skills/team/agents/openai.yaml` permits implicit selection without guaranteeing host matching/loading; `skills/team-core/references/workflow-routing.md` selects existing workflows and links their contracts | Existing workflow Skills, role routing, TDD and repair guards, and feedback schema; no router role, runtime, or new lifecycle |
 
 ## Risk-proportional design exploration
 
@@ -30,9 +40,27 @@ For new pages and visible UI changes, the Lead passes a lightweight UI brief and
 
 Functional tests and rendered visual inspection are separate evidence. The Lead checks the final integrated page's evidence, and missing browser access remains an explicit unverified state. Agent inspection never replaces user manual acceptance. See the [UI delivery contract](../skills/team-core/references/ui-quality.md). This workflow does not claim measured visual improvement until a matched-task comparison is actually run.
 
+## Risk-proportional web engineering
+
+For actual frontend/backend work, `skills/team-core/references/web-engineering.md` maps risk in the changed boundary to selected client or service guidance. Frontend state/data, usability/performance, and backend reliability references are conditional; they preserve the existing Work contract, role selection, stage packet, test tiers, and approval boundaries. Real data, permissions, exposure, or side effects remain relevant even in a demo, while isolated fake-data work does not automatically inherit production hardening. The shared guide is progressive disclosure, not a new lifecycle or a requirement to read every linked document.
+
+| Area | Conditional source | Scope |
+| --- | --- | --- |
+| Shared selection | `skills/team-core/references/web-engineering.md` | Selects relevant client/service risks and evidence within existing workflow contracts. |
+| Frontend | `skills/frontend-engineering/references/state-data.md`; `usability-performance.md` | State ownership, asynchronous data, affected interaction/accessibility behavior, or a measured performance concern. |
+| Backend | `skills/backend-engineering/references/service-reliability.md` | Actual API/job contracts, authorization, retries, idempotency, concurrency, partial failure, or recovery. |
+
 ## Data work
 
 `team-database-specialist` owns SQL safety, schema design, migrations, indexing, query plans, transaction boundaries, and data-change rollback. It is invoked only when data-layer changes are material.
+
+## Git delivery readiness
+
+`$team-delivery-check` is a conditional, read-only assessment for clear delivery intent, not an unconditional child-agent invocation. Under the [Git delivery contract](../skills/team-core/references/git-delivery.md), routine lightweight Commit/Push/PullRequest assessment may be a labeled Lead self-check; independently requested or material/complex scope, release execution, installation-source and consequential merge/rebase assessment use the exact `team-delivery-checker`. Each operation still checks its actual index or complete outgoing history and pinned target against project policy. Valid prior evidence can be reused, but new intermediate commits cannot be hidden by a clean final diff. Collector readiness is not semantic approval. Ordinary edits do not activate delivery; Git actions and installation remain separately authorized.
+
+| Module | Owner files and responsibility | Dependencies |
+| --- | --- | --- |
+| Git delivery assessment (GIT-DELIVERY) | `skills/team-delivery-check/SKILL.md` selects Lead self-check or the exact `agents/team-delivery-checker.toml` role under `skills/team-core/references/git-delivery.md`; `skills/team-core/scripts/git-delivery.ps1` collects bounded local evidence | Exact named-role availability when independent checking is required; explicit operation, base/target and user intent where required; current policy and verification evidence; PowerShell 7 and a local Git worktree |
 
 ## Optional AI simulation and engineering
 
